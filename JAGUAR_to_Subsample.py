@@ -146,12 +146,14 @@ sftestfits = fits.open(full_sf_mock_file)
 full_sf_IDs = sftestfits[1].data['ID']
 full_sf_redshifts = sftestfits[1].data['redshift']
 full_sf_logmass = sftestfits[1].data['mStar']
+full_sf_re_maj = sftestfits[1].data['Re_maj']
+full_sf_sersic_n = sftestfits[1].data['sersic_n']
 n_sf_objects = len(full_sf_IDs)
 
 # Get the star-forming fluxes. 
 sf_filt_flux = np.zeros([number_filters, n_sf_objects])
 for j in range(0, number_filters):
-	sf_filt_flux[:][j] = sftestfits[1].data[filters[j]+'_fnu']*1e-23*1e-9
+	sf_filt_flux[:][j] = sftestfits[1].data[filters[j]+'_fnu']#*1e-23*1e-9
 
 
 # Full quiescent catalogue, fits file
@@ -162,20 +164,30 @@ qtestfits = fits.open(full_q_mock_file)
 full_q_IDs = qtestfits[1].data['ID']
 full_q_redshifts = qtestfits[1].data['redshift']
 full_q_logmass = qtestfits[1].data['mStar']
+full_q_re_maj = qtestfits[1].data['Re_maj']
+full_q_sersic_n = qtestfits[1].data['sersic_n']
 n_q_objects = len(full_q_IDs)
 
 # Get the quiescent fluxes. 
 q_filt_flux = np.zeros([number_filters, n_q_objects])
 for j in range(0, number_filters):
-	q_filt_flux[:][j] = qtestfits[1].data[filters[j]+'_fnu']*1e-23*1e-9
+	q_filt_flux[:][j] = qtestfits[1].data[filters[j]+'_fnu']#*1e-23*1e-9
 
 
 # Open up the output files. 
 if (make_sf == 1):
 	sffile = open(args.sf_output_filename, 'w')
+	sffile.write('#ID    Redshift    Log(Mass)    Re_Maj    Sersic_n     ')
+	for j in range(0, number_filters):
+		sffile.write(filters[j]+'    ')
+	sffile.write(' \n')
 if (make_q == 1):
 	qfile = open(args.q_output_filename, 'w')
-
+	qfile.write('#ID    Redshift    Log(Mass)    Re_Maj    Sersic_n     ')
+	for j in range(0, number_filters):
+		qfile.write(filters[j]+'    ')
+	qfile.write(' \n')
+	
 # This is to be used if the randomized fluxes are requested
 sf_ID_value = 1
 q_ID_value = 1
@@ -201,6 +213,8 @@ for z in range(0, n_redshift_bins-1):
 		full_sf_IDs_z_mass = full_sf_IDs[z_indices_sf][mass_indices_sf]
 		full_sf_redshifts_z_mass = full_sf_redshifts[z_indices_sf][mass_indices_sf]
 		full_sf_logmass_z_mass = full_sf_logmass[z_indices_sf][mass_indices_sf]
+		full_sf_re_maj_z_mass = full_sf_re_maj[z_indices_sf][mass_indices_sf]
+		full_sf_sersic_n_z_mass = full_sf_sersic_n[z_indices_sf][mass_indices_sf]
 
 		# Find the SF flux values for the objects in the mass and redshift bin being examined.
 		sf_filt_flux_z_mass = np.zeros([number_filters, len(full_sf_IDs_z_mass)])
@@ -220,7 +234,8 @@ for z in range(0, n_redshift_bins-1):
 			for x in range(0, len(ri)):
 				if (randomize_IDs == 0):
 					sf_ID_value = full_sf_IDs_z_mass[ri[x]]
-				sffile.write(str(sf_ID_value)+' '+str(full_sf_redshifts_z_mass[ri[x]])+' '+str(full_sf_logmass_z_mass[ri[x]])+' ')
+				sffile.write(str(sf_ID_value)+' '+str(full_sf_redshifts_z_mass[ri[x]])+' '+str(full_sf_logmass_z_mass[ri[x]])
+					+' '+str(full_sf_re_maj_z_mass[ri[x]])+' '+str(full_sf_sersic_n_z_mass[ri[x]])+' ')
 				for j in range(0, number_filters):
 					flux_1D_array = sf_filt_flux_z_mass[:][j]
 					sffile.write(str(flux_1D_array[ri[x]])+' ')
@@ -233,6 +248,8 @@ for z in range(0, n_redshift_bins-1):
 		full_q_IDs_z_mass = full_q_IDs[z_indices_q][mass_indices_q]
 		full_q_redshifts_z_mass = full_q_redshifts[z_indices_q][mass_indices_q]
 		full_q_logmass_z_mass = full_q_logmass[z_indices_q][mass_indices_q]
+		full_q_re_maj_z_mass = full_q_re_maj[z_indices_q][mass_indices_q]
+		full_q_sersic_n_z_mass = full_q_sersic_n[z_indices_q][mass_indices_q]
 
 		# Find the Q flux values for the objects in the mass and redshift bin being examined.
 		q_filt_flux_z_mass = np.zeros([number_filters, len(full_q_IDs_z_mass)])
@@ -253,7 +270,8 @@ for z in range(0, n_redshift_bins-1):
 			for x in range(0, len(ri)):
 				if (randomize_IDs == 0):
 					q_ID_value = full_q_IDs_z_mass[ri[x]]
-				qfile.write(str(q_ID_value)+' '+str(full_q_redshifts_z_mass[ri[x]])+' '+str(full_q_logmass_z_mass[ri[x]])+' ')
+				qfile.write(str(q_ID_value)+' '+str(full_q_redshifts_z_mass[ri[x]])+' '+str(full_q_logmass_z_mass[ri[x]])
+					+' '+str(full_q_re_maj_z_mass[ri[x]])+' '+str(full_q_sersic_n_z_mass[ri[x]])+' ')
 				for j in range(0, number_filters):
 					flux_1D_array = q_filt_flux_z_mass[:][j]
 					qfile.write(str(flux_1D_array[ri[x]])+' ')
