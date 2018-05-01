@@ -7,7 +7,8 @@ that has a subsample of the full objects, such that the subsample tries to
 equally sample redshift and mass space (instead of being weighted towards 
 low redshift, low mass objects). It's run with a variety of flags.
 		
-```usage: JAGUAR_to_Subsample.py [-h] -in INPUT_FOLDER [-sfo SF_OUTPUT_FILENAME]
+```
+usage: JAGUAR_to_Subsample.py [-h] -in INPUT_FOLDER [-sfo SF_OUTPUT_FILENAME]
                        [-qo Q_OUTPUT_FILENAME] [-rid RANDOMIZE_IDS]
                        [-nz NUMBER_PER_REDSHIFT_BIN] [-fi FILTERS_FILE]
                        [-mf]
@@ -48,7 +49,8 @@ will be produced. Currently, the HST noise addition is very simple, while the
 NIRCam addition will take into account the size, estimating an aperture
 correction. 
 		
-```usage: Subsample_to_NoisySubsample.py [-h] -in INPUT_FILE -out OUTPUT_FILE
+```
+usage: Subsample_to_NoisySubsample.py [-h] -in INPUT_FILE -out OUTPUT_FILE
 		                                      -hst HST_DEPTH -ni NIRCAM_DEPTH -fi
 		                                      FILTERS_FILE [-mf]
 
@@ -65,7 +67,8 @@ optional arguments:
                         NIRCam survey: deep or medium
   -fi FILTERS_FILE, --filters_file FILTERS_FILE
                         Filters File Name
-  -mf, --make_fits      Make Fits File?```
+  -mf, --make_fits      Make Fits File?
+```
 
 
 `% python Subsample_to_NoisySubsample.py -in sf_fluxes_4_30_18.fits -o test_noisy.dat -hst flankingpointsource -ni deep -fi filters.dat -mf`
