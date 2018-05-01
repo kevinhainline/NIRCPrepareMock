@@ -71,7 +71,7 @@ optional arguments:
 ```
 
 
-`% python Subsample_to_NoisySubsample.py -in sf_fluxes_4_30_18.fits -o test_noisy.dat -hst flankingpointsource -ni deep -fi filters.dat -mf`
+`% python Subsample_to_NoisySubsample.py -in sf_output.fits -o sf_noisy.dat -hst flankingpointsource -ni deep -fi filters.dat -mf`
 
 In this example, the name of the input file is specified (text or .fits), and 
 the HST and NIRCam depths are set. Next, the filters file is specified (any filter
