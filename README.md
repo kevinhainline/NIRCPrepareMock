@@ -26,8 +26,8 @@ optional arguments:
                         Number of Objects Per Redshift Bin)
   -fi FILTERS_FILE, --filters_file FILTERS_FILE
                         Filters File Name
-  -mf, --make_fits      Make Fits File?```
-
+  -mf, --make_fits      Make Fits File?
+```
 
 Here is an example of the input:
 		
