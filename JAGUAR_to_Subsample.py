@@ -6,6 +6,7 @@ import matplotlib.pyplot as plt
 from astropy.io import fits
 from astropy.io import fits
 from astropy.io import ascii
+from astropy.table import Table
 
 def JytoABMag(flux):
 	return (-5.0 / 2.0) * np.log10(flux) - 48.60
@@ -84,18 +85,41 @@ parser.add_argument(
   required=False
 )
 
+# Generate Fits File
+parser.add_argument(
+  '-mf','--make_fits',
+  help="Make Fits File?",
+  action="store_true",
+  dest="make_fits",
+  required=False
+)
+
 args=parser.parse_args()
 
 if (args.sf_output_filename):
 	make_sf = 1
+	if ((args.sf_output_filename.endswith('.txt')) or (args.sf_output_filename.endswith('.dat'))):
+		sf_filenameroot = ('.').join(args.sf_output_filename.split('.')[:-1])
+	else:
+		sf_filenameroot = args.sf_output_filename
 else:
 	make_sf = 0
 
+
+	
 if (args.q_output_filename):
 	make_q = 1
+	if ((args.q_output_filename.endswith('.txt')) or (args.q_output_filename.endswith('.dat'))):
+		q_filenameroot = ('.').join(args.q_output_filename.split('.')[:-1])
+	else:
+		q_filenameroot = args.q_output_filename
 else:
 	make_q = 0
 
+if (args.make_fits):
+	make_fits_file = 1
+else: 
+	make_fits_file = 0
 	
 if ((make_sf == 0) & (make_q == 0)):
 	sys.exit("No output SF or Q filename specified! Use -sfo or -q to provide a filename")
@@ -114,12 +138,6 @@ else:
 
 number_filters = len(filters)
 
-#sf_output_filename = 'sf_fluxes_4_13_18.dat'
-#q_output_filename = 'q_fluxes_4_13_18.dat'
-
-#make_sf = 0
-#make_q = 1
-#randomize_IDs = 0
 
 redshift_minimum = 0.0
 redshift_maximum = 15.0
@@ -176,13 +194,13 @@ for j in range(0, number_filters):
 
 # Open up the output files. 
 if (make_sf == 1):
-	sffile = open(args.sf_output_filename, 'w')
+	sffile = open(sf_filenameroot+'.dat', 'w')
 	sffile.write('#ID    Redshift    Log(Mass)    Re_Maj    Sersic_n     ')
 	for j in range(0, number_filters):
 		sffile.write(filters[j]+'    ')
 	sffile.write(' \n')
 if (make_q == 1):
-	qfile = open(args.q_output_filename, 'w')
+	qfile = open(q_filenameroot+'.dat', 'w')
 	qfile.write('#ID    Redshift    Log(Mass)    Re_Maj    Sersic_n     ')
 	for j in range(0, number_filters):
 		qfile.write(filters[j]+'    ')
@@ -283,3 +301,79 @@ if (make_sf == 1):
 	sffile.close()
 if (make_q == 1):
 	qfile.close()
+
+if (args.make_fits):
+	# First, let's make the  dtype and colnames arrays
+	colnames = np.zeros(5+number_filters, dtype ='S20')
+	dtype = np.zeros(5+number_filters, dtype ='str')
+	colnames[0] = 'ID'
+	colnames[1] = 'redshift'
+	colnames[2] = 'logmass'
+	colnames[3] = 're_major'
+	colnames[4] = 'sersic_n'
+		
+	dtype[0] = 'I'
+	dtype[1] = 'd'
+	dtype[2] = 'd'
+	dtype[3] = 'd'
+	dtype[4] = 'd'
+	for j in range(0, number_filters):
+		colnames[j+5] = filters[j]
+		dtype[j+5] = 'd'
+
+	if (make_sf == 1):
+		catalogue_file = sf_filenameroot+'.dat'
+		cat_file_full = np.loadtxt(catalogue_file)
+		ID_numbers = cat_file_full[:,0]
+		redshifts = cat_file_full[:,1]
+		logmasses = cat_file_full[:,2]
+		re_major = cat_file_full[:,3]
+		sersic_n = cat_file_full[:,4]
+		n_objects = ID_numbers.size
+	
+		apparent_flux = np.zeros([number_filters, n_objects])
+		for j in range(0, number_filters):
+			apparent_flux[:][j] = cat_file_full[:,5+j]
+		
+		# And now let's assemble the data array
+		output_data = np.zeros([n_objects, 5+number_filters])
+		output_data[:,0] = ID_numbers
+		output_data[:,1] = redshifts
+		output_data[:,2] = logmasses
+		output_data[:,3] = re_major
+		output_data[:,4] = sersic_n
+		for j in range(0, number_filters):
+			output_data[:,j+5] = apparent_flux[:][j]
+		
+		# And finally, let's write out the output file.
+		outtab = Table(output_data, names=colnames, dtype=dtype)
+		outtab.write(sf_filenameroot+'.fits')
+
+	if (make_q == 1):
+		catalogue_file = q_filenameroot+'.dat'
+		cat_file_full = np.loadtxt(catalogue_file)
+		ID_numbers = cat_file_full[:,0]
+		redshifts = cat_file_full[:,1]
+		logmasses = cat_file_full[:,2]
+		re_major = cat_file_full[:,3]
+		sersic_n = cat_file_full[:,4]
+		n_objects = ID_numbers.size
+	
+		apparent_flux = np.zeros([number_filters, n_objects])
+		for j in range(0, number_filters):
+			apparent_flux[:][j] = cat_file_full[:,5+j]
+		
+				
+		# And now let's assemble the data array
+		output_data = np.zeros([n_objects, 5+number_filters])
+		output_data[:,0] = ID_numbers
+		output_data[:,1] = redshifts
+		output_data[:,2] = logmasses
+		output_data[:,3] = re_major
+		output_data[:,4] = sersic_n
+		for j in range(0, number_filters):
+			output_data[:,j+5] = apparent_flux[:][j]
+		
+		# And finally, let's write out the output file.
+		outtab = Table(output_data, names=colnames, dtype=dtype)
+		outtab.write(q_filenameroot+'.fits')

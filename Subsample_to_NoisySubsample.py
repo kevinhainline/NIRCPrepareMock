@@ -7,6 +7,7 @@ import scipy.special as sc
 import matplotlib.pyplot as plt
 from astropy.io import fits
 from astropy.io import ascii
+from astropy.table import Table
 
 
 # Calculate the sersic flux given an effective radius and aperture size. 
@@ -113,8 +114,22 @@ parser.add_argument(
 # Optional Arguments #
 ######################
 
+# Generate Fits File
+parser.add_argument(
+  '-mf','--make_fits',
+  help="Make Fits File?",
+  action="store_true",
+  dest="make_fits",
+  required=False
+)
 
 args=parser.parse_args()
+
+if ((args.output_file.endswith('.txt')) or (args.output_file.endswith('.dat'))):
+	filenameroot = ('.').join(args.output_file.split('.')[:-1])
+else:
+	filenameroot = args.output_file
+
 
 # Read in filters file
 filter_file_name = args.filters_file
@@ -151,23 +166,38 @@ else:
 
 output_file_name = args.output_file
 
-# Open up the subsample catalogue file
-catalogue_file = args.input_file
-cat_file_full = np.loadtxt(catalogue_file)
-ID_numbers = cat_file_full[:,0]
-redshifts = cat_file_full[:,1]
-logmasses = cat_file_full[:,2]
-re_major = cat_file_full[:,3]
-sersic_n = cat_file_full[:,4]
-n_objects = ID_numbers.size
+if args.input_file.endswith('.fits'):
+	#sys.exit("this is a fits file!")
+	fitsinput = fits.open(args.input_file)
+	ID_numbers = fitsinput[1].data['ID']
+	redshifts = fitsinput[1].data['redshift']
+	logmasses = fitsinput[1].data['logmass']
+	re_major = fitsinput[1].data['re_major']
+	sersic_n = fitsinput[1].data['sersic_n']
+	n_objects = ID_numbers.size
 
-# Get the star-forming fluxes. 
-#print number_filters
-#print n_objects
-apparent_flux = np.zeros([number_filters, n_objects])
-for j in range(0, number_filters):
-	apparent_flux[:][j] = cat_file_full[:,5+j]
+	apparent_flux = np.zeros([number_filters, n_objects])
+	for j in range(0, number_filters):
+		apparent_flux[:][j] = fitsinput[1].data[filters[j]]
+	
+else:
+	# Open up the subsample catalogue file
+	catalogue_file = args.input_file
+	cat_file_full = np.loadtxt(catalogue_file)
+	ID_numbers = cat_file_full[:,0]
+	redshifts = cat_file_full[:,1]
+	logmasses = cat_file_full[:,2]
+	re_major = cat_file_full[:,3]
+	sersic_n = cat_file_full[:,4]
+	n_objects = ID_numbers.size
 
+	# Get the star-forming fluxes. 
+	#print number_filters
+	#print n_objects
+	apparent_flux = np.zeros([number_filters, n_objects])
+	for j in range(0, number_filters):
+		apparent_flux[:][j] = cat_file_full[:,5+j]
+	
 #filt_flux = np.zeros([nfilters, n_objects])
 #filt_sig = np.zeros([nfilters, n_objects])
 
@@ -181,7 +211,11 @@ hst_noise_five_sigma = tab[hst_depth_header]
 hst_noise_five_sigma_flux = 10**((-2.0/5.0) * (hst_noise_five_sigma + 48.60))
 hst_noise_one_sigma_flux = hst_noise_five_sigma_flux/1e-23 / 1e-9 / 5.0
 
-f = open(output_file_name, 'a')
+f = open(filenameroot+'.dat', 'a')
+f.write('# ID   redshift   ')
+for j in range(0, number_filters):
+	f.write(filters[j]+' err   ')
+f.write(' \n')
 
 #pix_area = np.zeros(number_matching_survey)
 #ap_corr = np.zeros(n_objects)
@@ -390,4 +424,40 @@ for x in range(0, n_objects):
 	f.write(' \n')
 			
 f.close()
+
+if (args.make_fits):
+	# First, let's make the  dtype and colnames arrays
+	colnames = np.zeros(2+number_filters, dtype ='S20')
+	dtype = np.zeros(2+number_filters, dtype ='str')
+	colnames[0] = 'ID'
+	colnames[1] = 'redshift'
+
+	dtype[0] = 'I'
+	dtype[1] = 'd'
+	for j in range(0, number_filters):
+		colnames[j+2] = filters[j]
+		dtype[j+2] = 'd'
+
+	catalogue_file = output_file_name
+	cat_file_full = np.loadtxt(catalogue_file)
+	ID_numbers = cat_file_full[:,0]
+	redshifts = cat_file_full[:,1]
+	n_objects = ID_numbers.size
+	
+	apparent_flux = np.zeros([number_filters, n_objects])
+	for j in range(0, number_filters):
+		apparent_flux[:][j] = cat_file_full[:,2+j]
+		
+	# And now let's assemble the data array
+	output_data = np.zeros([n_objects, 2+number_filters])
+	output_data[:,0] = ID_numbers
+	output_data[:,1] = redshifts
+	for j in range(0, number_filters):
+		output_data[:,j+2] = apparent_flux[:][j]
+		
+	# And finally, let's write out the output file.
+	outtab = Table(output_data, names=colnames, dtype=dtype)
+	outtab.write(filenameroot+'.fits')
+
+
 
