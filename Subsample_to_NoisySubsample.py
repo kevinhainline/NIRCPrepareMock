@@ -247,12 +247,16 @@ for x in range(0, n_objects):
 	if (ap_corr > 1.0):
 		ap_corr = 1.0
 	
+	final_number_filters = 0
+	final_filters = np.empty([0], dtype='S20')
 	# Go through the various filters
 	for j in range(0, number_filters):
 		filter_found = 0
 		
 		# HST FILTERS AND FLUX ERROR ESTIMATES
 		if (filters[j] == 'HST_F435W'):
+			final_number_filters = final_number_filters + 1
+			final_filters = np.append(final_filters, ['HST_F435W'])
 			filter_found = 1
 			flux_value = apparent_flux[j][x]
 			flux_error = hst_noise_one_sigma_flux[0]
@@ -262,6 +266,8 @@ for x in range(0, n_objects):
 				flux_value_noisy = np.random.normal(flux_value, flux_error, 1)[0]
 
 		if (filters[j] == 'HST_F606W'):
+			final_number_filters = final_number_filters + 1
+			final_filters = np.append(final_filters, ['HST_F606W'])
 			filter_found = 1
 			flux_value = apparent_flux[j][x]
 			flux_error = hst_noise_one_sigma_flux[1]
@@ -271,6 +277,8 @@ for x in range(0, n_objects):
 				flux_value_noisy = np.random.normal(flux_value, flux_error, 1)[0]
 
 		if (filters[j] == 'HST_F775W'):
+			final_number_filters = final_number_filters + 1
+			final_filters = np.append(final_filters, ['HST_F775W'])
 			filter_found = 1
 			flux_value = apparent_flux[j][x]
 			flux_error = hst_noise_one_sigma_flux[2]
@@ -280,6 +288,8 @@ for x in range(0, n_objects):
 				flux_value_noisy = np.random.normal(flux_value, flux_error, 1)[0]
 
 		if (filters[j] == 'HST_F814W'):
+			final_number_filters = final_number_filters + 1
+			final_filters = np.append(final_filters, ['HST_F814W'])
 			filter_found = 1
 			flux_value = apparent_flux[j][x]
 			flux_error = hst_noise_one_sigma_flux[3]
@@ -289,6 +299,8 @@ for x in range(0, n_objects):
 				flux_value_noisy = np.random.normal(flux_value, flux_error, 1)[0]
 
 		if (filters[j] == 'HST_F850LP'):
+			final_number_filters = final_number_filters + 1
+			final_filters = np.append(final_filters, ['HST_F850LP'])
 			filter_found = 1
 			flux_value = apparent_flux[j][x]
 			flux_error = hst_noise_one_sigma_flux[4]
@@ -301,6 +313,8 @@ for x in range(0, n_objects):
 		pix_area_LW = 3.14159265 * ap_radius * ap_radius / (.064 * .064 )
 		# NIRCam FILTERS AND FLUX ERROR ESTIMATES
 		if (filters[j] == 'NRC_F090W'):
+			final_number_filters = final_number_filters + 1
+			final_filters = np.append(final_filters, ['NRC_F090W'])
 			filter_found = 1
 			nrc_filter_index = 0
 			flux_value = apparent_flux[j][x]
@@ -314,6 +328,8 @@ for x in range(0, n_objects):
 			flux_error = ferror
 
 		if (filters[j] == 'NRC_F115W'):
+			final_number_filters = final_number_filters + 1
+			final_filters = np.append(final_filters, ['NRC_F115W'])
 			filter_found = 1
 			nrc_filter_index = 1
 			flux_value = apparent_flux[j][x]
@@ -327,6 +343,8 @@ for x in range(0, n_objects):
 			flux_error = ferror
 
 		if (filters[j] == 'NRC_F150W'):
+			final_number_filters = final_number_filters + 1
+			final_filters = np.append(final_filters, ['NRC_F150W'])
 			filter_found = 1
 			nrc_filter_index = 2
 			flux_value = apparent_flux[j][x]
@@ -340,6 +358,8 @@ for x in range(0, n_objects):
 			flux_error = ferror
 
 		if (filters[j] == 'NRC_F200W'):
+			final_number_filters = final_number_filters + 1
+			final_filters = np.append(final_filters, ['NRC_F200W'])
 			filter_found = 1
 			nrc_filter_index = 3
 			flux_value = apparent_flux[j][x]
@@ -353,6 +373,8 @@ for x in range(0, n_objects):
 			flux_error = ferror
 
 		if (filters[j] == 'NRC_F277W'):
+			final_number_filters = final_number_filters + 1
+			final_filters = np.append(final_filters, ['NRC_F277W'])
 			filter_found = 1
 			nrc_filter_index = 4
 			flux_value = apparent_flux[j][x]
@@ -366,6 +388,8 @@ for x in range(0, n_objects):
 			flux_error = ferror
 
 		if (filters[j] == 'NRC_F335M'):
+			final_number_filters = final_number_filters + 1
+			final_filters = np.append(final_filters, ['NRC_F335M'])
 			filter_found = 1
 			nrc_filter_index = 5
 			flux_value = apparent_flux[j][x]
@@ -379,6 +403,8 @@ for x in range(0, n_objects):
 			flux_error = ferror
 
 		if (filters[j] == 'NRC_F356W'):
+			final_number_filters = final_number_filters + 1
+			final_filters = np.append(final_filters, ['NRC_F356W'])
 			filter_found = 1
 			nrc_filter_index = 6
 			flux_value = apparent_flux[j][x]
@@ -392,6 +418,8 @@ for x in range(0, n_objects):
 			flux_error = ferror
 
 		if (filters[j] == 'NRC_F410M'):
+			final_number_filters = final_number_filters + 1
+			final_filters = np.append(final_filters, ['NRC_F410M'])
 			filter_found = 1
 			nrc_filter_index = 7
 			flux_value = apparent_flux[j][x]
@@ -405,6 +433,8 @@ for x in range(0, n_objects):
 			flux_error = ferror
 
 		if (filters[j] == 'NRC_F444W'):
+			final_number_filters = final_number_filters + 1
+			final_filters = np.append(final_filters, ['NRC_F444W'])
 			filter_found = 1
 			nrc_filter_index = 8
 			flux_value = apparent_flux[j][x]
@@ -425,18 +455,23 @@ for x in range(0, n_objects):
 			
 f.close()
 
+print final_number_filters
+print final_filters
+
 if (args.make_fits):
 	# First, let's make the  dtype and colnames arrays
-	colnames = np.zeros(2+number_filters, dtype ='S20')
-	dtype = np.zeros(2+number_filters, dtype ='str')
+	colnames = np.zeros(2+(final_number_filters*2), dtype ='S20')
+	dtype = np.zeros(2+(final_number_filters*2), dtype ='str')
 	colnames[0] = 'ID'
 	colnames[1] = 'redshift'
 
 	dtype[0] = 'I'
 	dtype[1] = 'd'
-	for j in range(0, number_filters):
-		colnames[j+2] = filters[j]
-		dtype[j+2] = 'd'
+	for j in range(0, final_number_filters):
+		colnames[(j+1)*2] = final_filters[j]
+		colnames[((j+1)*2)+1] = final_filters[j]+'_err'
+		dtype[(j+1)*2] = 'd'
+		dtype[((j+1)*2)+1] = 'd'
 
 	catalogue_file = output_file_name
 	cat_file_full = np.loadtxt(catalogue_file)
@@ -444,16 +479,19 @@ if (args.make_fits):
 	redshifts = cat_file_full[:,1]
 	n_objects = ID_numbers.size
 	
-	apparent_flux = np.zeros([number_filters, n_objects])
+	apparent_flux = np.zeros([final_number_filters, n_objects])
+	apparent_flux_err = np.zeros([final_number_filters, n_objects])
 	for j in range(0, number_filters):
-		apparent_flux[:][j] = cat_file_full[:,2+j]
+		apparent_flux[:][j] = cat_file_full[:,(j+1)*2]
+		apparent_flux_err[:][j] = cat_file_full[:,((j+1)*2)+1]
 		
 	# And now let's assemble the data array
-	output_data = np.zeros([n_objects, 2+number_filters])
+	output_data = np.zeros([n_objects, 2+(final_number_filters*2)])
 	output_data[:,0] = ID_numbers
 	output_data[:,1] = redshifts
-	for j in range(0, number_filters):
-		output_data[:,j+2] = apparent_flux[:][j]
+	for j in range(0, final_number_filters):
+		output_data[:,(j+1)*2] = apparent_flux[:][j]
+		output_data[:,((j+1)*2)+1] = apparent_flux_err[:][j]
 		
 	# And finally, let's write out the output file.
 	outtab = Table(output_data, names=colnames, dtype=dtype)
