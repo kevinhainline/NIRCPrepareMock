@@ -1,3 +1,4 @@
+import os
 import sys
 import argparse
 import random
@@ -85,6 +86,16 @@ parser.add_argument(
   required=False
 )
 
+# Combine Files
+parser.add_argument(
+  '-co','--coutputfilename',
+  help="Filename for combined file?",
+  action="store",
+  type=str,
+  dest="combine_filename",
+  required=False
+)
+
 # Generate Fits File
 parser.add_argument(
   '-mf','--make_fits',
@@ -104,8 +115,6 @@ if (args.sf_output_filename):
 		sf_filenameroot = args.sf_output_filename
 else:
 	make_sf = 0
-
-
 	
 if (args.q_output_filename):
 	make_q = 1
@@ -116,6 +125,19 @@ if (args.q_output_filename):
 else:
 	make_q = 0
 
+if (args.combine_filename):
+	make_combine = 1
+	if ((args.combine_filename.endswith('.txt')) or (args.combine_filename.endswith('.dat'))):
+		c_filenameroot = ('.').join(args.combine_filename.split('.')[:-1])
+	else:
+		c_filenameroot = args.combine_filename
+else:
+	make_combine = 0
+
+
+if (((make_sf == 0) or (make_q == 0)) and (make_combine == 1)):
+	sys.exit("I can't combine the SF and Q files, since you only request one of the two. ")
+ 
 if (args.make_fits):
 	make_fits_file = 1
 else: 
@@ -299,8 +321,23 @@ for z in range(0, n_redshift_bins-1):
 		
 if (make_sf == 1):
 	sffile.close()
+	os.system('sort -bn -k1 '+sf_filenameroot+'.dat > '+sf_filenameroot+'.sorted.dat')
+	os.system('rm '+sf_filenameroot+'.dat')
+	os.system('mv '+sf_filenameroot+'.sorted.dat '+sf_filenameroot+'.dat')
 if (make_q == 1):
 	qfile.close()
+	os.system('sort -bn -k1 '+q_filenameroot+'.dat > '+q_filenameroot+'.sorted.dat')
+	os.system('rm '+q_filenameroot+'.dat')
+	os.system('mv '+q_filenameroot+'.sorted.dat '+q_filenameroot+'.dat')
+
+
+#os.system("some_command with args")
+
+if (args.combine_filename):
+	os.system("sed '1d' "+q_filenameroot+".dat > tmp.dat")
+	os.system('cat '+sf_filenameroot+'.dat tmp.dat > '+c_filenameroot+'.dat')
+	os.system('rm tmp.dat')
+	
 
 if (args.make_fits):
 	# First, let's make the  dtype and colnames arrays
@@ -377,3 +414,32 @@ if (args.make_fits):
 		# And finally, let's write out the output file.
 		outtab = Table(output_data, names=colnames, dtype=dtype)
 		outtab.write(q_filenameroot+'.fits')
+
+	if (make_combine == 1):
+		catalogue_file = c_filenameroot+'.dat'
+		cat_file_full = np.loadtxt(catalogue_file)
+		ID_numbers = cat_file_full[:,0]
+		redshifts = cat_file_full[:,1]
+		logmasses = cat_file_full[:,2]
+		re_major = cat_file_full[:,3]
+		sersic_n = cat_file_full[:,4]
+		n_objects = ID_numbers.size
+	
+		apparent_flux = np.zeros([number_filters, n_objects])
+		for j in range(0, number_filters):
+			apparent_flux[:][j] = cat_file_full[:,5+j]
+		
+		# And now let's assemble the data array
+		output_data = np.zeros([n_objects, 5+number_filters])
+		output_data[:,0] = ID_numbers
+		output_data[:,1] = redshifts
+		output_data[:,2] = logmasses
+		output_data[:,3] = re_major
+		output_data[:,4] = sersic_n
+		for j in range(0, number_filters):
+			output_data[:,j+5] = apparent_flux[:][j]
+		
+		# And finally, let's write out the output file.
+		outtab = Table(output_data, names=colnames, dtype=dtype)
+		outtab.write(c_filenameroot+'.fits')
+

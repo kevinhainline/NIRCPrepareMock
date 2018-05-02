@@ -455,8 +455,6 @@ for x in range(0, n_objects):
 			
 f.close()
 
-print final_number_filters
-print final_filters
 
 if (args.make_fits):
 	# First, let's make the  dtype and colnames arrays
@@ -481,7 +479,7 @@ if (args.make_fits):
 	
 	apparent_flux = np.zeros([final_number_filters, n_objects])
 	apparent_flux_err = np.zeros([final_number_filters, n_objects])
-	for j in range(0, number_filters):
+	for j in range(0, final_number_filters):
 		apparent_flux[:][j] = cat_file_full[:,(j+1)*2]
 		apparent_flux_err[:][j] = cat_file_full[:,((j+1)*2)+1]
 		

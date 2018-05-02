@@ -20,23 +20,26 @@ optional arguments:
   -sfo SF_OUTPUT_FILENAME, --sfoutputfilename SF_OUTPUT_FILENAME
                         SF Output Filename
   -qo Q_OUTPUT_FILENAME, --qoutputfilename Q_OUTPUT_FILENAME
-		                Q Output Filename
+                        Q Output Filename
   -rid RANDOMIZE_IDS, --randomizeids RANDOMIZE_IDS
                         Randomize the ID Numbers? (1 = Yes, 0 = No)
   -nz NUMBER_PER_REDSHIFT_BIN, --nobjectsperz NUMBER_PER_REDSHIFT_BIN
                         Number of Objects Per Redshift Bin)
   -fi FILTERS_FILE, --filters_file FILTERS_FILE
                         Filters File Name
+  -co COMBINE_FILENAME, --coutputfilename COMBINE_FILENAME
+                        Filename for combined file?
   -mf, --make_fits      Make Fits File?
 ```
 
 Here is an example of the input:
 		
-`% python JAGUAR_to_Subsample.py -in /Path/To/Your/Mock_Catalog_Files/ -rid 0 -sfo sf_output.dat -qo q_output.dat -fi filters.dat -mf`
+`% python JAGUAR_to_Subsample.py -in /Path/To/Your/Mock_Catalog_Files/ -rid 0 -sfo sf_output.dat -qo q_output.dat -co all_output.dat -fi filters.dat -mf`
 
 In this example, the path to the mock catalog file is specified, the ID numbers
 are not randomized, and then the output SF and Q files are specified (which
-triggers the creation of both files). A filters file is specified, which is one
+triggers the creation of both files). I've also specified that a final combined
+file should be created. A filters file is specified, which is one
 column including the filters that are desired. Finally, the make fits flag is
 set, so two fits files will also be created. 
 
