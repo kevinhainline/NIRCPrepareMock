@@ -114,7 +114,7 @@ optional arguments:
 
 In this example, the name of the input file is specified (text or .fits), and 
 then flags for eazy, beagle, bpz, and lephare to create those input files. Finally,
-we provide a string to put into the output files.  
+we provide a string to put into the output files (`5_1_18`)
 
 This also requires another file, `NoisySubsample_to_PhotoZInput_filters.dat`, which specifies
 various filter files for the individual photometric redshift codes. This should match up
@@ -136,3 +136,53 @@ NRC_F356W F356W F356W_NRConly_ModAB_mean_resampled.res NIRCam_F356W.res
 NRC_F410M F410M F410M_NRConly_ModAB_mean_resampled.res NIRCam_F410M.res
 NRC_F444W F444W F444W_NRConly_ModAB_mean_resampled.res NIRCam_F444W.res
 ```
+
+### `ComparePhotoZ_to_SpecZ.py`
+This script takes in the output files from EAZY, BPZ, and Le Phare (at the moment) and
+produces files that show the photometric redshifts compared to the spectroscopic redshifts
+as a function of both SNR, and a second parameter from the JAGUAR catalog, if you specify.
+
+
+```
+usage: ComparePhotoZ_to_SpecZ.py [-h] -input INPUT_PHOTOMETRY -nrcf
+                                 NIRCAM_FILTER -snrl SNR_LIMIT
+                                 [-eazy EAZY_OUTPUT_FILE]
+                                 [-bpz BPZ_OUTPUT_FILE]
+                                 [-lep LEPHARE_OUTPUT_FILE]
+                                 [-zeb ZEBRA_OUTPUT_FILE] [-minz MINIMUM_Z]
+                                 [-maxz MAXIMUM_Z] [-jaguar JAGUAR_PATH]
+                                 [-jparam JAGUAR_PARAM]
+
+optional arguments:
+  -h, --help            show this help message and exit
+  -input INPUT_PHOTOMETRY, --input_photometry INPUT_PHOTOMETRY
+                        Input Photometry for analysis
+  -nrcf NIRCAM_FILTER, --nircam_filter NIRCAM_FILTER
+                        NIRCam filter for SNR analysis?
+  -snrl SNR_LIMIT, --snr_limit SNR_LIMIT
+                        SNR Limit for analysis?
+  -eazy EAZY_OUTPUT_FILE, --eazy_output_file EAZY_OUTPUT_FILE
+                        Analyze EAZY output?
+  -bpz BPZ_OUTPUT_FILE, --bpz_output_file BPZ_OUTPUT_FILE
+                        Analyze BPZ output?
+  -lep LEPHARE_OUTPUT_FILE, --lephare_output_file LEPHARE_OUTPUT_FILE
+                        Analyze Le Phare output?
+  -zeb ZEBRA_OUTPUT_FILE, --zebra_output_file ZEBRA_OUTPUT_FILE
+                        Analyze Zebra output?
+  -minz MINIMUM_Z, --minimum_z MINIMUM_Z
+                        Minimum Redshift for Analysis
+  -maxz MAXIMUM_Z, --maximum_z MAXIMUM_Z
+                        Maximum Redshift for Analysis
+  -jaguar JAGUAR_PATH, --jaguar_path JAGUAR_PATH
+                        Path to JAGUAR Catalogs?
+  -jparam JAGUAR_PARAM, --jaguar_param JAGUAR_PARAM
+                        JAGUAR Parameter for Coloring Plots?
+```
+
+`% python ComparePhotoZ_to_SpecZ.py -input /Path/To/Input/Noisy/Photometry/all_fluxes_5_1_18_noisy.dat -nrcf NRC_F200W -snrl 5 -eazy /Path/To/EAZY/output/photz.zout -jaguar /Path/To/Your/Mock_Catalog_Files/ -jparam sSFR`
+
+In this example, we point to the full set of noisy photometry from `Subsample_to_NoisySubsample.py`, and
+then I specify the SNR filter, and the SNR level, for files that cut down on noisy, low
+SNR objects. Then I specify that I want to do an EAZY analysis by pointing to the EAZY
+output file, and finally I point to the JAGUAR mock file and specify a galaxy parameter
+for making spec-z vs. photo-z plots colored by that parameter. 

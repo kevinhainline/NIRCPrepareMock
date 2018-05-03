@@ -9,7 +9,7 @@ from astropy.io import ascii
 from astropy.table import Table
 
 
-def plotty(data1, data2, color_data, name, filtername, title_for_plot, min_redshift, max_redshift):
+def plotty(data1, data2, color_data, name, filtername, title_for_plot, min_redshift, max_redshift, colorlabel):
 	fig, ax = plt.subplots()
 
 	b = np.arange(0,max_redshift+1)
@@ -23,7 +23,7 @@ def plotty(data1, data2, color_data, name, filtername, title_for_plot, min_redsh
 
 	ax.set_xlabel('$z_{spec}$', fontsize=20)
 	ax.set_ylabel('$z_{phot}$', fontsize=20)
-	cbar = fig.colorbar(cax, label = 'log(SNR$_{'+filtername+'}$)')
+	cbar = fig.colorbar(cax, label = colorlabel)
 	ax.set_title(title_for_plot)
 	#plt.show()
 	plt.savefig(name, format='png', dpi=600)

@@ -12,6 +12,9 @@ from astropy.table import Table
 def JytoABMag(flux):
 	return (-5.0 / 2.0) * np.log10(flux) - 48.60
 
+JAGUAR_version = 'r1_v1.1'
+
+
 randomize_IDs = 0
 
 # Parser for figuring out the various input parameters
@@ -179,7 +182,7 @@ number_per_mass_bin = number_per_redshift_bin / (n_mass_bins)
 print number_per_mass_bin
 
 # Full star-forming catalogue, fits file
-full_sf_mock_file = args.input_folder+'JADES_SF_mock_r1_v1.1.fits'
+full_sf_mock_file = args.input_folder+'JADES_SF_mock_'+JAGUAR_version+'.fits'
 sftestfits = fits.open(full_sf_mock_file)
 
 # Get redshifts and galaxy properties
@@ -197,7 +200,7 @@ for j in range(0, number_filters):
 
 
 # Full quiescent catalogue, fits file
-full_q_mock_file = args.input_folder+'JADES_Q_mock_r1_v1.1.fits'
+full_q_mock_file = args.input_folder+'JADES_Q_mock_'+JAGUAR_version+'.fits'
 qtestfits = fits.open(full_q_mock_file)
 
 # Get redshifts and galaxy properties
