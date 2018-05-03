@@ -75,7 +75,7 @@ parser.add_argument(
   required=False
 )
 
-# Generate Le Phare input file
+# Generate Zebra input file
 parser.add_argument(
   '-zeb','--zebra_input_file','--zebra',
   help="Make Zebra file?",

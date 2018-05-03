@@ -211,11 +211,8 @@ hst_noise_five_sigma = tab[hst_depth_header]
 hst_noise_five_sigma_flux = 10**((-2.0/5.0) * (hst_noise_five_sigma + 48.60))
 hst_noise_one_sigma_flux = hst_noise_five_sigma_flux/1e-23 / 1e-9 / 5.0
 
-f = open(filenameroot+'.dat', 'a')
-f.write('# ID   redshift   ')
-for j in range(0, number_filters):
-	f.write(filters[j]+' err   ')
-f.write(' \n')
+f = open(filenameroot+'.NOFIRSTLINE.dat', 'a')
+
 
 #pix_area = np.zeros(number_matching_survey)
 #ap_corr = np.zeros(n_objects)
@@ -454,6 +451,17 @@ for x in range(0, n_objects):
 	f.write(' \n')
 			
 f.close()
+
+f = open(filenameroot+'.FIRSTLINE.dat', 'a')
+f.write('# ID   redshift   ')
+for j in range(0, final_number_filters):
+	f.write(final_filters[j]+' '+final_filters[j]+'_err   ')
+f.write(' \n')
+f.close()
+
+os.system('cat '+filenameroot+'.FIRSTLINE.dat '+filenameroot+'.NOFIRSTLINE.dat > '+filenameroot+'.dat')
+os.system('rm '+filenameroot+'.NOFIRSTLINE.dat')
+os.system('rm '+filenameroot+'.FIRSTLINE.dat')
 
 
 if (args.make_fits):
