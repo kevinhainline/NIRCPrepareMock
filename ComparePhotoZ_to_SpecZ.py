@@ -206,8 +206,12 @@ for x in range(0, number_objects):
 
 if (args.jaguar_path):
 	path_to_jaguar_cat_given = 1
+else:
+	path_to_jaguar_cat_given = 0
 if (args.jaguar_param):
 	jaguar_param_given = 1
+else:
+	jaguar_param_given = 0
 
 if ((path_to_jaguar_cat_given == 0) and (jaguar_param_given == 1)):
 	sys.exit("You can't specify a JAGUAR parameter but not provide a path to the JAGUAR catalogs!")
@@ -258,7 +262,7 @@ if (args.eazy_output_file):
 	title_for_plot = 'EAZY Results'
 
 # Le Phare
-if (args.eazy_output_file):
+if (args.lephare_output_file):
 	output_folder = 'LePhare_analysis/'
 	if not os.path.exists(output_folder):
 	    os.makedirs(output_folder)
@@ -271,7 +275,8 @@ if (args.eazy_output_file):
 	title_for_plot = 'Le Phare Results'
 
 # BPZ
-if (args.eazy_output_file):
+if (args.bpz_output_file):
+	output_folder = 'BPZ_analysis/'
 	if not os.path.exists(output_folder):
 	    os.makedirs(output_folder)
 
