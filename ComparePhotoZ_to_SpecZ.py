@@ -4,6 +4,8 @@ import math
 import argparse
 import numpy as np
 import matplotlib.pyplot as plt
+import astropy.stats
+import scipy.stats
 from astropy.io import fits
 from astropy.io import ascii
 from astropy.table import Table
@@ -13,6 +15,9 @@ filter_file_name = 'NoisySubsample_to_PhotoZInput_filters.dat'
 
 # Which version of the mock are you using
 JAGUAR_version = 'r1_v1.1'
+
+def FluxtoABMag(flux):
+	return (-5.0 / 2.0) * np.log10(flux) - 48.60
 
 # Parser for figuring out the various input parameters
 parser = argparse.ArgumentParser()
@@ -115,6 +120,15 @@ parser.add_argument(
   required=False
 )
 
+# Make Plots?
+parser.add_argument(
+  '-mp','--make_plots',
+  help="Make Plots?",
+  action="store_true",
+  dest="make_plots",
+  required=False
+)
+
 # Original JAGUAR Catalog Path
 parser.add_argument(
   '-jaguar','--jaguar_path',
@@ -185,9 +199,20 @@ else:
 	NIRc_err = full_input_file[:,((filter_index+1)*2)+1]
 	number_objects = len(ID_values)
 
+NIRc_mag = np.zeros(number_objects)
+NIRc_SNR = np.zeros(number_objects)
+for x in range(0, number_objects):
+	if (NIRc_flux[x] > 0):
+		NIRc_mag[x] = FluxtoABMag(NIRc_flux[x]*1e-23*1e-9)
+		NIRc_SNR[x] = NIRc_flux[x]/NIRc_err[x]
+	else:
+		NIRc_mag[x] = 99.99
+		NIRc_SNR[x] = 0.00
+#NIRc_mag = FluxtoABMag(NIRc_flux*1e-23*1e-9)
+
 
 # Now, let's calculate the SNR ratio for our filter of choice:
-NIRc_SNR = NIRc_flux/NIRc_err
+#NIRc_SNR = NIRc_flux/NIRc_err
 n_objects = len(NIRc_SNR)
 
 logNIRc_SNR = np.zeros(number_objects)
@@ -290,6 +315,7 @@ if (args.bpz_output_file):
 
 zspec_highSNR = np.zeros(n_highSNR_objects)
 zphot_highSNR = np.zeros(n_highSNR_objects)
+NIRc_mag_highSNR = np.zeros(n_highSNR_objects)
 logNIRc_highSNR = np.zeros(n_highSNR_objects)
 if ((path_to_jaguar_cat_given == 1) and (jaguar_param_given == 1)):
 	catalog_photoz_param_highSNR = np.zeros(n_highSNR_objects)
@@ -299,6 +325,7 @@ for x in range(0, n_objects):
 	if (NIRc_SNR[x] >= SNR_limit):
 		zspec_highSNR[x_highSNR_objects] = z_spec[x]
 		zphot_highSNR[x_highSNR_objects] = z_phot[x]
+		NIRc_mag_highSNR[x_highSNR_objects] = NIRc_mag[x]
 
 		logNIRc_highSNR[x_highSNR_objects] = logNIRc_SNR[x]
 		if ((path_to_jaguar_cat_given == 1) and (jaguar_param_given == 1)):
@@ -308,23 +335,122 @@ for x in range(0, n_objects):
 
 b = np.arange(0,max_redshift+1)
 
-# And now let's do some plotting. 
-colorlabel = 'log(SNR$_{'+args.nircam_filter+'}$)'
-name = output_folder+'/z_phot_vs_z_spec_SNR_'+str(SNR_limit)+'.png'
-plotty(zspec_highSNR, zphot_highSNR, logNIRc_highSNR, name, args.nircam_filter, title_for_plot, min_redshift, max_redshift, colorlabel)
-name = output_folder+'/z_phot_vs_z_spec_SNR_all.png'
-plotty(z_spec, z_phot, logNIRc_SNR, name, args.nircam_filter, title_for_plot, min_redshift, max_redshift, colorlabel)
+# # # # # # # # # # # # #
+#  Calculate Statisics  #
+# # # # # # # # # # # # #
+print "------------------"
+# ALL OBJECTS
+residuals = (z_spec - z_phot) / (1 + z_spec)
 
-if ((path_to_jaguar_cat_given == 1) and (jaguar_param_given == 1)):
-	colorlabel = args.jaguar_param
-	name = output_folder+'/z_phot_vs_z_spec_'+args.jaguar_param+'_SNR_'+str(SNR_limit)+'.png'
-	plotty(zspec_highSNR, zphot_highSNR, catalog_photoz_param_highSNR, name, args.nircam_filter, title_for_plot, min_redshift, max_redshift, colorlabel)
-	name = output_folder+'/z_phot_vs_z_spec_'+args.jaguar_param+'_all.png'
-	plotty(z_spec, z_phot, catalog_photoz_param, name, args.nircam_filter, title_for_plot, min_redshift, max_redshift, colorlabel)
+residual_mean = np.mean(residuals)
+residual_std = np.std(residuals)
+residual_68_value = residuals_68(residuals)
+NMAD = 1.48 * astropy.stats.median_absolute_deviation(residuals)
+fraction_gt_15 = len(np.where(abs(residuals) > 0.15)[0])*1.0/len(abs(residuals))*1.0
+#skewness = scipy.stats.skew(residuals)
 
-name = output_folder+'/z_phot_vs_z_spec_deltazvsz.png'
-plot_deltazvsz(z_spec, z_phot, logNIRc_SNR, name, args.nircam_filter)
+print "ALL OBJECTS"
+print " bias = %.3f +/- %.3f" % (residual_mean, residual_std)
+print " sigma_68 = %.3f" % (residual_68_value)
+print " NMAD = %.3f" % (NMAD)
+print " fraction (> 0.15) = %.3f" % (fraction_gt_15)
+#print " skewness = %.3f" % (skewness)
+print "------------------"
+# HIGH SNR OBJECTS
 
-name = output_folder+'/SNR_histograms.png'
-plot_histograms(z_spec, z_phot, logNIRc_SNR, name, args.nircam_filter, title_for_plot)
+residuals_SNR_5 = (zspec_highSNR - zphot_highSNR) / (1 + zspec_highSNR)
+
+residual_mean_SNR_5 = np.mean(residuals_SNR_5)
+residual_std_SNR_5 = np.std(residuals_SNR_5)
+residual_68_value_SNR_5 = residuals_68(residuals_SNR_5)
+NMAD_SNR_5 = 1.48 * astropy.stats.median_absolute_deviation(residuals_SNR_5)
+fraction_gt_15_SNR_5 = len(np.where(abs(residuals_SNR_5) > 0.15)[0])*1.0/len(abs(residuals_SNR_5))*1.0
+#skewness_SNR_5 = scipy.stats.skew(residuals_SNR_5)
+
+print ""+args.nircam_filter+"_SNR > 5"
+print " bias = %.3f +/- %.3f" % (residual_mean_SNR_5, residual_std_SNR_5)
+print " sigma_68 = %.3f" % (residual_68_value_SNR_5)
+print " NMAD = %.3f" % (NMAD_SNR_5)
+print " fraction (> 0.15) = %.3f" % (fraction_gt_15_SNR_5)
+#print " skewness = %.3f" % (skewness)
+print "------------------"
+
+
+
+# # # # # # # # #
+#  Make  Plots  #
+# # # # # # # # #
+
+if (args.make_plots):
+
+	n_bins = 200
+	b = plt.hist(residuals[np.where((residuals > -1.0) & (residuals < 1.0))[0]], bins = n_bins)
+	max_value = np.max(b[0])+np.max(b[0])*0.1
+	plt.plot([residual_mean, residual_mean],[-1, max_value], label = 'bias = '+str(round(residual_mean,4)))
+	plt.plot([NMAD, NMAD],[-1, max_value], label = 'NMAD = '+str(round(NMAD,4)))
+	plt.plot([residual_68_value, residual_68_value],[-1, max_value], color = 'grey', alpha = 0.3)
+	plt.plot([-1.0*residual_68_value, -1.0*residual_68_value],[-1, max_value], label = 'sigma_68 = '+str(round(residual_68_value,4)), color = 'grey', alpha = 0.3)
+	plt.xlabel('(z$_{spec}$ - z$_{phot}$) / (1 + z$_{spec}$)')
+	plt.ylabel('N')
+	plt.title(title_for_plot)
+	plt.axis([-0.5,1.0,0.0,max_value])
+	plt.legend()
+	plt.savefig(output_folder+'/residual_histogram.png', dpi=300)
+
+	plt.clf()
+	n_bins = 200
+	b = plt.hist(residuals_SNR_5[np.where((residuals_SNR_5 > -1.0) & (residuals_SNR_5 < 1.0))[0]], bins = n_bins)
+	max_value = np.max(b[0])+np.max(b[0])*0.1
+	plt.plot([residual_mean_SNR_5, residual_mean_SNR_5],[-1, max_value], label = 'bias = '+str(round(residual_mean_SNR_5,4)))
+	plt.plot([NMAD_SNR_5, NMAD_SNR_5],[-1, max_value], label = 'NMAD = '+str(round(NMAD_SNR_5,4)))
+	plt.plot([residual_68_value_SNR_5, residual_68_value_SNR_5],[-1, max_value], color = 'grey', alpha = 0.3)
+	plt.plot([-1.0*residual_68_value_SNR_5, -1.0*residual_68_value_SNR_5],[-1, max_value], label = 'sigma_68 = '+str(round(residual_68_value_SNR_5,4)), color = 'grey', alpha = 0.3)
+	plt.xlabel('(z$_{spec}$ - z$_{phot}$) / (1 + z$_{spec}$)')
+	plt.ylabel('N')
+	plt.title(title_for_plot+', SNR > '+str(SNR_limit))
+	plt.axis([-0.5,1.0,0.0,max_value])
+	plt.legend()
+	plt.savefig(output_folder+'/residual_histogram_SNR_'+str(SNR_limit)+'.png', dpi=300)
+
+
+	colorlabel = 'log(SNR$_{'+args.nircam_filter+'}$)'
+	name = output_folder+'/z_phot_vs_z_spec.png'
+	photz_specz_offset(z_spec, z_phot, logNIRc_SNR, name, args.nircam_filter, title_for_plot, min_redshift, max_redshift, colorlabel)
+	name = output_folder+'/z_phot_vs_z_spec_SNR_'+str(SNR_limit)+'.png'
+	photz_specz_offset(zspec_highSNR, zphot_highSNR, logNIRc_highSNR, name, args.nircam_filter, title_for_plot, min_redshift, max_redshift, colorlabel)
+	#name = output_folder+'/z_phot_vs_z_spec_SNR_'+str(SNR_limit)+'.png'
+	#plotty(zspec_highSNR, zphot_highSNR, logNIRc_highSNR, name, args.nircam_filter, title_for_plot, min_redshift, max_redshift, colorlabel)
+	#name = output_folder+'/z_phot_vs_z_spec_SNR_all.png'
+	#plotty(z_spec, z_phot, logNIRc_SNR, name, args.nircam_filter, title_for_plot, min_redshift, max_redshift, colorlabel)
+	
+	if ((path_to_jaguar_cat_given == 1) and (jaguar_param_given == 1)):
+		colorlabel = args.jaguar_param
+		name = output_folder+'/z_phot_vs_z_spec_'+args.jaguar_param+'_SNR_'+str(SNR_limit)+'.png'
+		plotty(zspec_highSNR, zphot_highSNR, catalog_photoz_param_highSNR, name, args.nircam_filter, title_for_plot, min_redshift, max_redshift, colorlabel)
+		name = output_folder+'/z_phot_vs_z_spec_'+args.jaguar_param+'_all.png'
+		plotty(z_spec, z_phot, catalog_photoz_param, name, args.nircam_filter, title_for_plot, min_redshift, max_redshift, colorlabel)
+	
+	name = output_folder+'/z_phot_vs_z_spec_deltazvsz.png'
+	plot_deltazvsz(z_spec, z_phot, logNIRc_SNR, name, args.nircam_filter)
+	
+	name = output_folder+'/SNR_histograms.png'
+	plot_histograms(z_spec, z_phot, logNIRc_SNR, name, args.nircam_filter, title_for_plot)
+	
+	#name = output_folder+'/offset_vs_redshift.png'
+	#offset_vs_specz(z_spec, z_phot, title_for_plot, name, min_redshift, max_redshift)
+	
+	#name = output_folder+'/offset_vs_redshift_SNR_'+str(SNR_limit)+'.png'
+	#offset_vs_specz(zspec_highSNR, zphot_highSNR, title_for_plot, name, min_redshift, max_redshift)
+	
+	name = output_folder+'/outlier_fraction_mag_'+args.nircam_filter+'.png'
+	outlier_fraction_vs_mag(z_spec, z_phot, NIRc_mag, name, args.nircam_filter, title_for_plot)
+	
+	#name = output_folder+'/outlier_fraction_mag_'+args.nircam_filter+'_SNR_'+str(SNR_limit)+'.png'
+	#outlier_fraction_vs_mag(zspec_highSNR, zphot_highSNR, NIRc_mag_highSNR, name, args.nircam_filter, title_for_plot)
+	
+	name = output_folder+'/outlier_fraction_z.png'
+	outlier_fraction_vs_redshift(z_spec, z_phot, name, title_for_plot)
+	
+	name = output_folder+'/outlier_fraction_z_SNR_'+str(SNR_limit)+'.png'
+	outlier_fraction_vs_redshift(zspec_highSNR, zphot_highSNR, name, title_for_plot)
 

@@ -139,8 +139,9 @@ NRC_F444W F444W F444W_NRConly_ModAB_mean_resampled.res NIRCam_F444W.res
 
 ### `ComparePhotoZ_to_SpecZ.py`
 This script takes in the output files from EAZY, BPZ, and Le Phare (at the moment) and
-produces files that show the photometric redshifts compared to the spectroscopic redshifts
-as a function of both SNR, and a second parameter from the JAGUAR catalog, if you specify.
+calculates statistics and produces plots that show the photometric redshifts compared to the 
+spectroscopic redshifts as a function of both SNR, and a second parameter from the JAGUAR 
+catalog, if you specify.
 
 
 ```
@@ -150,7 +151,7 @@ usage: ComparePhotoZ_to_SpecZ.py [-h] -input INPUT_PHOTOMETRY -nrcf
                                  [-bpz BPZ_OUTPUT_FILE]
                                  [-lep LEPHARE_OUTPUT_FILE]
                                  [-zeb ZEBRA_OUTPUT_FILE] [-minz MINIMUM_Z]
-                                 [-maxz MAXIMUM_Z] [-jaguar JAGUAR_PATH]
+                                 [-maxz MAXIMUM_Z] [-mp] [-jaguar JAGUAR_PATH]
                                  [-jparam JAGUAR_PARAM]
 
 optional arguments:
@@ -173,16 +174,43 @@ optional arguments:
                         Minimum Redshift for Analysis
   -maxz MAXIMUM_Z, --maximum_z MAXIMUM_Z
                         Maximum Redshift for Analysis
+  -mp, --make_plots     Make Plots?
   -jaguar JAGUAR_PATH, --jaguar_path JAGUAR_PATH
                         Path to JAGUAR Catalogs?
   -jparam JAGUAR_PARAM, --jaguar_param JAGUAR_PARAM
                         JAGUAR Parameter for Coloring Plots?
+
 ```
 
-`% python ComparePhotoZ_to_SpecZ.py -input /Path/To/Input/Noisy/Photometry/all_fluxes_5_1_18_noisy.dat -nrcf NRC_F200W -snrl 5 -eazy /Path/To/EAZY/output/photz.zout -jaguar /Path/To/Your/Mock_Catalog_Files/ -jparam sSFR`
+`% python ComparePhotoZ_to_SpecZ.py -input /Path/To/Input/Noisy/Photometry/all_fluxes_5_1_18_noisy.dat -nrcf NRC_F200W -snrl 5 -eazy /Path/To/EAZY/output/photz.zout -jaguar /Path/To/Your/Mock_Catalog_Files/ -jparam sSFR -mp`
 
 In this example, we point to the full set of noisy photometry from `Subsample_to_NoisySubsample.py`, and
 then I specify the SNR filter, and the SNR level, for files that cut down on noisy, low
 SNR objects. Then I specify that I want to do an EAZY analysis by pointing to the EAZY
-output file, and finally I point to the JAGUAR mock file and specify a galaxy parameter
-for making spec-z vs. photo-z plots colored by that parameter. 
+output file. I then point to the JAGUAR mock file and specify a galaxy parameter
+for making spec-z vs. photo-z plots colored by that parameter. Finally, I specify
+that we'd like to make the plots instead of just producing statistics.
+
+The statistics that are produced are:
+
+```
+------------------
+ALL OBJECTS
+ bias = 0.121 +/- 1.643
+ sigma_68 = 0.066
+ NMAD = 0.038
+ fraction (> 0.15) = 0.191
+------------------
+NRC_F200W_SNR > 5
+ bias = 0.035 +/- 0.183
+ sigma_68 = 0.034
+ NMAD = 0.025
+ fraction (> 0.15) = 0.067
+------------------
+```
+
+The first is the bias, which is the average and standard deviation of 
+`delta_z = (z_spec - z_phot) / (1 + z_spec)`. Next is `sigma_68`, the value of `delta_z` 
+that encompasses 68% of the residuals around 0. NMAD is Normalized Median Absolute Deviation
+of the residuals, which is defined as `NMAD(delta_z) = 1.48 * Median(abs(delta_z))`. Then
+there's the fraction of outliers with `abs(delta_z) > 0.15`.
