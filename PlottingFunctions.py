@@ -85,8 +85,27 @@ def photz_specz_offset(z_spec, z_phot, color_data, name, filtername, title_for_p
 	ax1.set_xlim([0.2, max_redshift])
 	ax1.set_ylim([-0.1, max_redshift])
 
-	ax1.plot([0, 15],[0, 12.6], '--', color = 'grey', label = '(z$_{spec}$ - z$_{phot}$) / (1 + z$_{spec}$) = 0.15')
-	ax1.plot([0, 15],[0, 17.4], '--', color = 'grey')
+	zspec_vals = np.arange(0,15,0.1)
+	zphot_vals_015_pos = zspec_vals + (0.15 * (1+zspec_vals))
+	zphot_vals_015_neg = zspec_vals - (0.15 * (1+zspec_vals))
+	zphot_vals_050_pos = zspec_vals + (0.50 * (1+zspec_vals))
+	zphot_vals_050_neg = zspec_vals - (0.50 * (1+zspec_vals))
+
+	ax1.plot(zspec_vals, zphot_vals_015_pos, '-', color = 'grey', alpha = 0.7, label = '(z$_{spec}$ - z$_{phot}$) / (1 + z$_{spec}$) = 0.15')
+	ax1.plot(zspec_vals, zphot_vals_015_neg, '-', color = 'grey', alpha = 0.7, label = '(z$_{spec}$ - z$_{phot}$) / (1 + z$_{spec}$) = 0.15')
+
+	ax1.plot(zspec_vals, zphot_vals_050_pos, '-', color = 'grey', alpha = 0.2, label = '(z$_{spec}$ - z$_{phot}$) / (1 + z$_{spec}$) = 0.50')
+	ax1.plot(zspec_vals, zphot_vals_050_neg, '-', color = 'grey', alpha = 0.2, label = '(z$_{spec}$ - z$_{phot}$) / (1 + z$_{spec}$) = 0.50')
+
+
+#	ax1.plot([0, 15],[0, 15-((1+15)*0.15)], '-', color = 'grey', alpha = 0.4, label = '(z$_{spec}$ - z$_{phot}$) / (1 + z$_{spec}$) = 0.15')
+#	ax1.plot([0, 15],[0, 15+((1+15)*0.15)], '-', color = 'grey', alpha = 0.4)
+
+#	ax1.plot([0, 15],[0, 15-((1+15)*0.5)], '-', color = 'grey', alpha = 0.2, label = '(z$_{spec}$ - z$_{phot}$) / (1 + z$_{spec}$) = 0.15')
+#	ax1.plot([0, 15],[0, 23], '-', color = 'grey', alpha = 0.2)
+#	ax1.plot([0, 2.5],[0, 4.25], '-', color = 'red', alpha = 0.2)
+#	ax1.plot([0, 6],[0, 9.5], '-', color = 'blue', alpha = 0.2)
+
 
 	ax1.set_xlabel('$z_{spec}$')
 	ax1.set_ylabel('$z_{phot}$')
@@ -103,8 +122,8 @@ def photz_specz_offset(z_spec, z_phot, color_data, name, filtername, title_for_p
 	ax2.set_xlabel('z$_{spec}$')
 	ax2.set_ylabel('(z$_{spec}$ - z$_{phot}$) / (1 + z$_{spec}$)')
 	ax2.plot([min_redshift, max_redshift],[0, 0], color = 'black')
-	ax2.plot([min_redshift, max_redshift],[-0.15, -0.15], '-', color = 'grey', alpha = 0.4, label = '(z$_{spec}$ - z$_{phot}$) / (1 + z$_{spec}$) = +/- 0.15')
-	ax2.plot([min_redshift, max_redshift],[0.15, 0.15], '-', color = 'grey', alpha = 0.4)
+	ax2.plot([min_redshift, max_redshift],[-0.15, -0.15], '-', color = 'grey', alpha = 0.7, label = '(z$_{spec}$ - z$_{phot}$) / (1 + z$_{spec}$) = +/- 0.15')
+	ax2.plot([min_redshift, max_redshift],[0.15, 0.15], '-', color = 'grey', alpha = 0.7)
 #	ax2.plot([min_redshift, max_redshift],[-0.10, -0.10], '-', color = 'grey', alpha = 0.5, label = '(z$_{spec}$ - z$_{phot}$) / (1 + z$_{spec}$) = +/- 0.10')
 #	ax2.plot([min_redshift, max_redshift],[0.10, 0.10], '-', color = 'grey', alpha = 0.5)
 #	ax2.plot([min_redshift, max_redshift],[-0.05, -0.05], '-', color = 'grey', alpha = 0.9, label = '(z$_{spec}$ - z$_{phot}$) / (1 + z$_{spec}$) = +/- 0.05')

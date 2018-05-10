@@ -376,13 +376,13 @@ print " fraction (> 0.15) = %.3f" % (fraction_gt_15_SNR_5)
 print "------------------"
 
 
-
 # # # # # # # # #
 #  Make  Plots  #
 # # # # # # # # #
 
 if (args.make_plots):
 
+	# Residual Histograms
 	n_bins = 200
 	b = plt.hist(residuals[np.where((residuals > -1.0) & (residuals < 1.0))[0]], bins = n_bins)
 	max_value = np.max(b[0])+np.max(b[0])*0.1
@@ -412,45 +412,55 @@ if (args.make_plots):
 	plt.legend()
 	plt.savefig(output_folder+'/residual_histogram_SNR_'+str(SNR_limit)+'.png', dpi=300)
 
-
+	# Plot photo-z vs. spec-z and delta_z vs. spec-z 
 	colorlabel = 'log(SNR$_{'+args.nircam_filter+'}$)'
 	name = output_folder+'/z_phot_vs_z_spec.png'
 	photz_specz_offset(z_spec, z_phot, logNIRc_SNR, name, args.nircam_filter, title_for_plot, min_redshift, max_redshift, colorlabel)
 	name = output_folder+'/z_phot_vs_z_spec_SNR_'+str(SNR_limit)+'.png'
 	photz_specz_offset(zspec_highSNR, zphot_highSNR, logNIRc_highSNR, name, args.nircam_filter, title_for_plot, min_redshift, max_redshift, colorlabel)
+	
+	# Plot photo-z vs. spec-z and delta_z vs. spec-z, colored by a JAGUAR parameter
+	if ((path_to_jaguar_cat_given == 1) and (jaguar_param_given == 1)):
+		colorlabel = args.jaguar_param
+		name = output_folder+'/z_phot_vs_z_spec_'+args.jaguar_param+'_all.png'
+		photz_specz_offset(z_spec, z_phot, catalog_photoz_param, name, args.nircam_filter, title_for_plot, min_redshift, max_redshift, colorlabel)
+		name = output_folder+'/z_phot_vs_z_spec_'+args.jaguar_param+'_SNR_'+str(SNR_limit)+'.png'
+		photz_specz_offset(zspec_highSNR, zphot_highSNR, catalog_photoz_param_highSNR, name, args.nircam_filter, title_for_plot, min_redshift, max_redshift, colorlabel)
+	
+	# Plot delta_z against zspec as a function of SNR
+	name = output_folder+'/z_phot_vs_z_spec_deltazvsz.png'
+	plot_deltazvsz(z_spec, z_phot, logNIRc_SNR, name, args.nircam_filter)
+	
+	# Plot the SNR histograms
+	name = output_folder+'/SNR_histograms.png'
+	plot_histograms(z_spec, z_phot, logNIRc_SNR, name, args.nircam_filter, title_for_plot)
+	
+	# Plot the Outlier Fraction as a function of magnitude
+	name = output_folder+'/outlier_fraction_mag_'+args.nircam_filter+'.png'
+	outlier_fraction_vs_mag(z_spec, z_phot, NIRc_mag, name, args.nircam_filter, title_for_plot)
+	
+	# Plot the Outlier Fraction as a function of redshift
+	name = output_folder+'/outlier_fraction_z.png'
+	outlier_fraction_vs_redshift(z_spec, z_phot, name, title_for_plot)
+	
+	# Plot the Outlier Fraction as a function of redshift for the high SNR objects
+	name = output_folder+'/outlier_fraction_z_SNR_'+str(SNR_limit)+'.png'
+	outlier_fraction_vs_redshift(zspec_highSNR, zphot_highSNR, name, title_for_plot)
+
+# Unused
 	#name = output_folder+'/z_phot_vs_z_spec_SNR_'+str(SNR_limit)+'.png'
 	#plotty(zspec_highSNR, zphot_highSNR, logNIRc_highSNR, name, args.nircam_filter, title_for_plot, min_redshift, max_redshift, colorlabel)
 	#name = output_folder+'/z_phot_vs_z_spec_SNR_all.png'
 	#plotty(z_spec, z_phot, logNIRc_SNR, name, args.nircam_filter, title_for_plot, min_redshift, max_redshift, colorlabel)
-	
-	if ((path_to_jaguar_cat_given == 1) and (jaguar_param_given == 1)):
-		colorlabel = args.jaguar_param
-		name = output_folder+'/z_phot_vs_z_spec_'+args.jaguar_param+'_SNR_'+str(SNR_limit)+'.png'
-		plotty(zspec_highSNR, zphot_highSNR, catalog_photoz_param_highSNR, name, args.nircam_filter, title_for_plot, min_redshift, max_redshift, colorlabel)
-		name = output_folder+'/z_phot_vs_z_spec_'+args.jaguar_param+'_all.png'
-		plotty(z_spec, z_phot, catalog_photoz_param, name, args.nircam_filter, title_for_plot, min_redshift, max_redshift, colorlabel)
-	
-	name = output_folder+'/z_phot_vs_z_spec_deltazvsz.png'
-	plot_deltazvsz(z_spec, z_phot, logNIRc_SNR, name, args.nircam_filter)
-	
-	name = output_folder+'/SNR_histograms.png'
-	plot_histograms(z_spec, z_phot, logNIRc_SNR, name, args.nircam_filter, title_for_plot)
-	
+#		colorlabel = args.jaguar_param
+#		name = output_folder+'/z_phot_vs_z_spec_'+args.jaguar_param+'_SNR_'+str(SNR_limit)+'.png'
+#		plotty(zspec_highSNR, zphot_highSNR, catalog_photoz_param_highSNR, name, args.nircam_filter, title_for_plot, min_redshift, max_redshift, colorlabel)
+#		name = output_folder+'/z_phot_vs_z_spec_'+args.jaguar_param+'_all.png'
+#		plotty(z_spec, z_phot, catalog_photoz_param, name, args.nircam_filter, title_for_plot, min_redshift, max_redshift, colorlabel)
 	#name = output_folder+'/offset_vs_redshift.png'
 	#offset_vs_specz(z_spec, z_phot, title_for_plot, name, min_redshift, max_redshift)
 	
 	#name = output_folder+'/offset_vs_redshift_SNR_'+str(SNR_limit)+'.png'
 	#offset_vs_specz(zspec_highSNR, zphot_highSNR, title_for_plot, name, min_redshift, max_redshift)
-	
-	name = output_folder+'/outlier_fraction_mag_'+args.nircam_filter+'.png'
-	outlier_fraction_vs_mag(z_spec, z_phot, NIRc_mag, name, args.nircam_filter, title_for_plot)
-	
 	#name = output_folder+'/outlier_fraction_mag_'+args.nircam_filter+'_SNR_'+str(SNR_limit)+'.png'
 	#outlier_fraction_vs_mag(zspec_highSNR, zphot_highSNR, NIRc_mag_highSNR, name, args.nircam_filter, title_for_plot)
-	
-	name = output_folder+'/outlier_fraction_z.png'
-	outlier_fraction_vs_redshift(z_spec, z_phot, name, title_for_plot)
-	
-	name = output_folder+'/outlier_fraction_z_SNR_'+str(SNR_limit)+'.png'
-	outlier_fraction_vs_redshift(zspec_highSNR, zphot_highSNR, name, title_for_plot)
-
