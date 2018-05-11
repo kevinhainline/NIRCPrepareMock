@@ -25,6 +25,12 @@ def residuals_68(residuals):
 	sorted_residuals = np.sort(abs(residuals))
 	number_objects = len(sorted_residuals)
 	return sorted_residuals[int(number_objects * 0.68)-1]
+
+def find_catastrophic_outliers(IDs, z_spec, z_phot):
+	residual = abs((z_spec - z_phot) / (1 + z_spec))
+	catastrophic_indices = np.where(residual > 0.5)[0]
+	catastrophic_outlier_IDs = IDs[catastrophic_indices]
+	return catastrophic_outlier_IDs
 	
 
 def plotty(data1, data2, color_data, name, filtername, title_for_plot, min_redshift, max_redshift, colorlabel):

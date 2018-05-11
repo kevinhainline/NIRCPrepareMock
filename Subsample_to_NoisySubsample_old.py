@@ -47,15 +47,12 @@ def sersic(sersic_nval, r_effval, r_aperval):
 # NIRCam photometric values
 nfilters = 9 # 
 n_aper = 4   # number_of_apertures__set_to_0_for_adaptive
-filt_name = ['HST_F435W', 'HST_F606W', 'HST_F775W', 'HST_F814W', 'HST_F850LP', 'NRC_F070W', 'NRC_F090W', 'NRC_F115W', 'NRC_F150W', 'NRC_F200W', 'NRC_F277W', 'NRC_F335M', 'NRC_F356W', 'NRC_F410M', 'NRC_F444W']
-pixel_size = np.array([0.049, 0.049, 0.049, 0.049, 0.049, 0.032, 0.032, 0.032, 0.032, 0.032, 0.064, 0.064, 0.064, 0.064, 0.064])
-bkgnd_nJy = np.array([7.26, 10.88, 14.91, 14.70, 18.52, 6.39, 6.39, 5.92, 4.97, 3.79, 18.76, 13.82, 14.81, 21.72, 31.60])     # backgrounds_for_GOODS_S_in_nJy/pix */
-e_sec_nJy = np.array([0.00465, 0.01016, 0.00473, 0.0061, 0.00217, 0.0189, 0.0268, 0.0297, 0.0392, 0.0452, 0.0375, 0.0164, 0.0433, 0.0177, 0.0371])   # e/sec/nJy_from_as-built_spreadsheet */ 
-read_noise = np.array([4.0, 4.0, 4.0, 4.0, 4.0, 6.0, 6.0, 6.0, 6.0, 6.0, 9.0, 9.0, 9.0, 9.0, 9.0])
-medium_time = np.array([152000., 174000., 377800., 50800., 421600., 0.00000, 11700., 11700., 9100., 7500., 9200., 6700., 7500., 11700., 11700.]) # Deep_survey_exp_times_per_filter */
-deep_time = np.array([152000., 174000., 377800., 50800., 421600., 60500., 60500., 80800., 59300., 38800., 49100., 30900., 38800., 60500., 60500.]) # Deep_survey_exp_times_per_filter */
+filt_name = ['NRC_F090W', 'NRC_F115W', 'NRC_F150W', 'NRC_F200W', 'NRC_F277W', 'NRC_F335M', 'NRC_F356W', 'NRC_F410M', 'NRC_F444W']
+bkgnd_nJy = np.array([6.39, 5.92, 4.97, 3.79, 18.76, 13.82, 14.81, 21.72, 31.60])     # backgrounds_for_GOODS_S_in_nJy/pix */
+e_sec_nJy = np.array([0.0268, 0.0297, 0.0392, 0.0452, 0.0375, 0.0164, 0.0433, 0.0177, 0.0371])   # e/sec/nJy_from_as-built_spreadsheet */ 
+medium_time = np.array([11700., 11700., 9100., 7500., 9200., 6700., 7500., 11700., 11700.]) # Deep_survey_exp_times_per_filter */
+deep_time = np.array([60500., 80800., 59300., 38800., 49100., 30900., 38800., 60500., 60500.]) # Deep_survey_exp_times_per_filter */
 aperture = np.array([0.16, 0.24, 0.32, 0.64])   # photom_apertures_in_arcsec  */
-
 
 ######################
 # Required Arguments #
@@ -194,10 +191,15 @@ else:
 	sersic_n = cat_file_full[:,4]
 	n_objects = ID_numbers.size
 
+	# Get the star-forming fluxes. 
+	#print number_filters
+	#print n_objects
 	apparent_flux = np.zeros([number_filters, n_objects])
 	for j in range(0, number_filters):
 		apparent_flux[:][j] = cat_file_full[:,5+j]
 	
+#filt_flux = np.zeros([nfilters, n_objects])
+#filt_sig = np.zeros([nfilters, n_objects])
 
 # Open up the HST noise file
 noise_file = '/Users/knh/Desktop/NIRCam/photometric_redshifts/prep_code/old_codes/grogin_5_sigma_sensitivities.txt'
@@ -210,6 +212,7 @@ hst_noise_five_sigma_flux = 10**((-2.0/5.0) * (hst_noise_five_sigma + 48.60))
 hst_noise_one_sigma_flux = hst_noise_five_sigma_flux/1e-23 / 1e-9 / 5.0
 
 f = open(filenameroot+'.NOFIRSTLINE.dat', 'a')
+
 
 #pix_area = np.zeros(number_matching_survey)
 #ap_corr = np.zeros(n_objects)
@@ -237,7 +240,6 @@ for x in range(0, n_objects):
 	ap_radius = aperture[i_ap]
 
 	ap_corr = sersic(sersic_n[x], re_major[x], ap_radius)
-	#print "ID "+str(ID_numbers[x])+", Aperture Correction = "+str(ap_corr) 
 	
 	if (ap_corr > 1.0):
 		ap_corr = 1.0
@@ -250,246 +252,194 @@ for x in range(0, n_objects):
 		
 		# HST FILTERS AND FLUX ERROR ESTIMATES
 		if (filters[j] == 'HST_F435W'):
-			filter_index = 0
-			pixel_area = 3.14159265 * ap_radius * ap_radius / (pixel_size[filter_index] * pixel_size[filter_index])
 			final_number_filters = final_number_filters + 1
 			final_filters = np.append(final_filters, ['HST_F435W'])
 			filter_found = 1
 			flux_value = apparent_flux[j][x]
-			filt_bkgnd = pixel_area * bkgnd_nJy[filter_index]
-			flux = ap_corr * flux_value + filt_bkgnd
-			ftemp = flux * e_sec_nJy[filter_index]
-			ferror = np.sqrt(ftemp * time[filter_index] + (read_noise[filter_index]*pixel_area)*(read_noise[filter_index]*pixel_area))							
-			ferror = ferror / (e_sec_nJy[filter_index] * time[filter_index])
-			ftemp = ferror * np.random.normal()
-			flux_value_noisy = ap_corr * flux_value + ftemp
-			flux_error = ferror
+			flux_error = hst_noise_one_sigma_flux[0]
+			if (flux_value < 0):
+				flux_value_noisy = np.random.normal(0.0, flux_error, 1)[0]
+			else: 
+				flux_value_noisy = np.random.normal(flux_value, flux_error, 1)[0]
 
 		if (filters[j] == 'HST_F606W'):
-			filter_index = 1
-			pixel_area = 3.14159265 * ap_radius * ap_radius / (pixel_size[filter_index] * pixel_size[filter_index])
 			final_number_filters = final_number_filters + 1
 			final_filters = np.append(final_filters, ['HST_F606W'])
 			filter_found = 1
 			flux_value = apparent_flux[j][x]
-			filt_bkgnd = pixel_area * bkgnd_nJy[filter_index]
-			flux = ap_corr * flux_value + filt_bkgnd
-			ftemp = flux * e_sec_nJy[filter_index]
-			ferror = np.sqrt(ftemp * time[filter_index] + (read_noise[filter_index]*pixel_area)*(read_noise[filter_index]*pixel_area))							
-			ferror = ferror / (e_sec_nJy[filter_index] * time[filter_index])
-			ftemp = ferror * np.random.normal()
-			flux_value_noisy = ap_corr * flux_value + ftemp
-			flux_error = ferror
+			flux_error = hst_noise_one_sigma_flux[1]
+			if (flux_value < 0):
+				flux_value_noisy = np.random.normal(0.0, flux_error, 1)[0]
+			else: 
+				flux_value_noisy = np.random.normal(flux_value, flux_error, 1)[0]
 
 		if (filters[j] == 'HST_F775W'):
-			filter_index = 2
-			pixel_area = 3.14159265 * ap_radius * ap_radius / (pixel_size[filter_index] * pixel_size[filter_index])
 			final_number_filters = final_number_filters + 1
 			final_filters = np.append(final_filters, ['HST_F775W'])
 			filter_found = 1
 			flux_value = apparent_flux[j][x]
-			filt_bkgnd = pixel_area * bkgnd_nJy[filter_index]
-			flux = ap_corr * flux_value + filt_bkgnd
-			ftemp = flux * e_sec_nJy[filter_index]
-			ferror = np.sqrt(ftemp * time[filter_index] + (read_noise[filter_index]*pixel_area)*(read_noise[filter_index]*pixel_area))							
-			ferror = ferror / (e_sec_nJy[filter_index] * time[filter_index])
-			ftemp = ferror * np.random.normal()
-			flux_value_noisy = ap_corr * flux_value + ftemp
-			flux_error = ferror
+			flux_error = hst_noise_one_sigma_flux[2]
+			if (flux_value < 0):
+				flux_value_noisy = np.random.normal(0.0, flux_error, 1)[0]
+			else: 
+				flux_value_noisy = np.random.normal(flux_value, flux_error, 1)[0]
 
 		if (filters[j] == 'HST_F814W'):
-			filter_index = 3
-			pixel_area = 3.14159265 * ap_radius * ap_radius / (pixel_size[filter_index] * pixel_size[filter_index])
 			final_number_filters = final_number_filters + 1
 			final_filters = np.append(final_filters, ['HST_F814W'])
 			filter_found = 1
 			flux_value = apparent_flux[j][x]
-			filt_bkgnd = pixel_area * bkgnd_nJy[filter_index]
-			flux = ap_corr * flux_value + filt_bkgnd
-			ftemp = flux * e_sec_nJy[filter_index]
-			ferror = np.sqrt(ftemp * time[filter_index] + (read_noise[filter_index]*pixel_area)*(read_noise[filter_index]*pixel_area))							
-			ferror = ferror / (e_sec_nJy[filter_index] * time[filter_index])
-			ftemp = ferror * np.random.normal()
-			flux_value_noisy = ap_corr * flux_value + ftemp
-			flux_error = ferror
+			flux_error = hst_noise_one_sigma_flux[3]
+			if (flux_value < 0):
+				flux_value_noisy = np.random.normal(0.0, flux_error, 1)[0]
+			else: 
+				flux_value_noisy = np.random.normal(flux_value, flux_error, 1)[0]
 
 		if (filters[j] == 'HST_F850LP'):
-			filter_index = 4
-			pixel_area = 3.14159265 * ap_radius * ap_radius / (pixel_size[filter_index] * pixel_size[filter_index])
 			final_number_filters = final_number_filters + 1
 			final_filters = np.append(final_filters, ['HST_F850LP'])
 			filter_found = 1
 			flux_value = apparent_flux[j][x]
-			filt_bkgnd = pixel_area * bkgnd_nJy[filter_index]
-			flux = ap_corr * flux_value + filt_bkgnd
-			ftemp = flux * e_sec_nJy[filter_index]
-			ferror = np.sqrt(ftemp * time[filter_index] + (read_noise[filter_index]*pixel_area)*(read_noise[filter_index]*pixel_area))							
-			ferror = ferror / (e_sec_nJy[filter_index] * time[filter_index])
-			ftemp = ferror * np.random.normal()
-			flux_value_noisy = ap_corr * flux_value + ftemp
-			flux_error = ferror
-
-		# NIRCam FILTERS AND FLUX ERROR ESTIMATES
-		if (filters[j] == 'NRC_F070W'):
-			filter_index = 5
-			pixel_area = 3.14159265 * ap_radius * ap_radius / (pixel_size[filter_index] * pixel_size[filter_index])
-			final_number_filters = final_number_filters + 1
-			final_filters = np.append(final_filters, ['NRC_F070W'])
-			filter_found = 1
-			flux_value = apparent_flux[j][x]
-			filt_bkgnd = pixel_area * bkgnd_nJy[filter_index]
-			flux = ap_corr * flux_value + filt_bkgnd
-			ftemp = flux * e_sec_nJy[filter_index]
-			ferror = np.sqrt(ftemp * time[filter_index] + (read_noise[filter_index]*pixel_area)*(read_noise[filter_index]*pixel_area))							
-			if (time[filter_index] > 0):
-				ferror = ferror / (e_sec_nJy[filter_index] * time[filter_index])
-				ftemp = ferror * np.random.normal()
-				flux_value_noisy = ap_corr * flux_value + ftemp
-				flux_error = ferror
+			flux_error = hst_noise_one_sigma_flux[4]
+			if (flux_value < 0):
+				flux_value_noisy = np.random.normal(0.0, flux_error, 1)[0]
 			else: 
-				flux_value_noisy = -9999
-				flux_error = -9999
+				flux_value_noisy = np.random.normal(flux_value, flux_error, 1)[0]
 
+		pix_area_SW = 3.14159265 * ap_radius * ap_radius / (.032 * .032 )
+		pix_area_LW = 3.14159265 * ap_radius * ap_radius / (.064 * .064 )
+		# NIRCam FILTERS AND FLUX ERROR ESTIMATES
 		if (filters[j] == 'NRC_F090W'):
-			filter_index = 6
-			pixel_area = 3.14159265 * ap_radius * ap_radius / (pixel_size[filter_index] * pixel_size[filter_index])
 			final_number_filters = final_number_filters + 1
 			final_filters = np.append(final_filters, ['NRC_F090W'])
 			filter_found = 1
+			nrc_filter_index = 0
 			flux_value = apparent_flux[j][x]
-			filt_bkgnd = pixel_area * bkgnd_nJy[filter_index]
+			filt_bkgnd = pix_area_SW * bkgnd_nJy[nrc_filter_index]
 			flux = ap_corr * flux_value + filt_bkgnd
-			ftemp = flux * e_sec_nJy[filter_index]
-			ferror = np.sqrt(ftemp * time[filter_index] + (read_noise[filter_index]*pixel_area)*(read_noise[filter_index]*pixel_area))							
-			ferror = ferror / (e_sec_nJy[filter_index] * time[filter_index])
+			ftemp = flux * e_sec_nJy[nrc_filter_index]
+			ferror = np.sqrt(ftemp * time[nrc_filter_index] + (6.0*pix_area_SW)*(6.0*pix_area_SW))							
+			ferror = ferror / (e_sec_nJy[nrc_filter_index] * time[nrc_filter_index])
 			ftemp = ferror * np.random.normal()
 			flux_value_noisy = ap_corr * flux_value + ftemp
 			flux_error = ferror
 
 		if (filters[j] == 'NRC_F115W'):
-			filter_index = 7
-			pixel_area = 3.14159265 * ap_radius * ap_radius / (pixel_size[filter_index] * pixel_size[filter_index])
 			final_number_filters = final_number_filters + 1
 			final_filters = np.append(final_filters, ['NRC_F115W'])
 			filter_found = 1
+			nrc_filter_index = 1
 			flux_value = apparent_flux[j][x]
-			filt_bkgnd = pixel_area * bkgnd_nJy[filter_index]
+			filt_bkgnd = pix_area_SW * bkgnd_nJy[nrc_filter_index]
 			flux = ap_corr * flux_value + filt_bkgnd
-			ftemp = flux * e_sec_nJy[filter_index]
-			ferror = np.sqrt(ftemp * time[filter_index] + (read_noise[filter_index]*pixel_area)*(read_noise[filter_index]*pixel_area))							
-			ferror = ferror / (e_sec_nJy[filter_index] * time[filter_index])
+			ftemp = flux * e_sec_nJy[nrc_filter_index]
+			ferror = np.sqrt(ftemp * time[nrc_filter_index] + (6.0*pix_area_SW)*(6.0*pix_area_SW))							
+			ferror = ferror / (e_sec_nJy[nrc_filter_index] * time[nrc_filter_index])
 			ftemp = ferror * np.random.normal()
 			flux_value_noisy = ap_corr * flux_value + ftemp
 			flux_error = ferror
 
 		if (filters[j] == 'NRC_F150W'):
-			filter_index = 8
-			pixel_area = 3.14159265 * ap_radius * ap_radius / (pixel_size[filter_index] * pixel_size[filter_index])
 			final_number_filters = final_number_filters + 1
 			final_filters = np.append(final_filters, ['NRC_F150W'])
 			filter_found = 1
+			nrc_filter_index = 2
 			flux_value = apparent_flux[j][x]
-			filt_bkgnd = pixel_area * bkgnd_nJy[filter_index]
+			filt_bkgnd = pix_area_SW * bkgnd_nJy[nrc_filter_index]
 			flux = ap_corr * flux_value + filt_bkgnd
-			ftemp = flux * e_sec_nJy[filter_index]
-			ferror = np.sqrt(ftemp * time[filter_index] + (read_noise[filter_index]*pixel_area)*(read_noise[filter_index]*pixel_area))							
-			ferror = ferror / (e_sec_nJy[filter_index] * time[filter_index])
+			ftemp = flux * e_sec_nJy[nrc_filter_index]
+			ferror = np.sqrt(ftemp * time[nrc_filter_index] + (6.0*pix_area_SW)*(6.0*pix_area_SW))							
+			ferror = ferror / (e_sec_nJy[nrc_filter_index] * time[nrc_filter_index])
 			ftemp = ferror * np.random.normal()
 			flux_value_noisy = ap_corr * flux_value + ftemp
 			flux_error = ferror
 
 		if (filters[j] == 'NRC_F200W'):
-			filter_index = 9
-			pixel_area = 3.14159265 * ap_radius * ap_radius / (pixel_size[filter_index] * pixel_size[filter_index])
 			final_number_filters = final_number_filters + 1
 			final_filters = np.append(final_filters, ['NRC_F200W'])
 			filter_found = 1
+			nrc_filter_index = 3
 			flux_value = apparent_flux[j][x]
-			filt_bkgnd = pixel_area * bkgnd_nJy[filter_index]
+			filt_bkgnd = pix_area_SW * bkgnd_nJy[nrc_filter_index]
 			flux = ap_corr * flux_value + filt_bkgnd
-			ftemp = flux * e_sec_nJy[filter_index]
-			ferror = np.sqrt(ftemp * time[filter_index] + (read_noise[filter_index]*pixel_area)*(read_noise[filter_index]*pixel_area))							
-			ferror = ferror / (e_sec_nJy[filter_index] * time[filter_index])
+			ftemp = flux * e_sec_nJy[nrc_filter_index]
+			ferror = np.sqrt(ftemp * time[nrc_filter_index] + (6.0*pix_area_SW)*(6.0*pix_area_SW))							
+			ferror = ferror / (e_sec_nJy[nrc_filter_index] * time[nrc_filter_index])
 			ftemp = ferror * np.random.normal()
 			flux_value_noisy = ap_corr * flux_value + ftemp
 			flux_error = ferror
 
 		if (filters[j] == 'NRC_F277W'):
-			filter_index = 10
-			pixel_area = 3.14159265 * ap_radius * ap_radius / (pixel_size[filter_index] * pixel_size[filter_index])
 			final_number_filters = final_number_filters + 1
 			final_filters = np.append(final_filters, ['NRC_F277W'])
 			filter_found = 1
+			nrc_filter_index = 4
 			flux_value = apparent_flux[j][x]
-			filt_bkgnd = pixel_area * bkgnd_nJy[filter_index]
+			filt_bkgnd = pix_area_LW * bkgnd_nJy[nrc_filter_index]
 			flux = ap_corr * flux_value + filt_bkgnd
-			ftemp = flux * e_sec_nJy[filter_index]
-			ferror = np.sqrt(ftemp * time[filter_index] + (read_noise[filter_index]*pixel_area)*(read_noise[filter_index]*pixel_area))							
-			ferror = ferror / (e_sec_nJy[filter_index] * time[filter_index])
+			ftemp = flux * e_sec_nJy[nrc_filter_index]
+			ferror = np.sqrt(ftemp * time[nrc_filter_index] + (9.0*pix_area_LW)*(9.0*pix_area_LW))							
+			ferror = ferror / (e_sec_nJy[nrc_filter_index] * time[nrc_filter_index])
 			ftemp = ferror * np.random.normal()
 			flux_value_noisy = ap_corr * flux_value + ftemp
 			flux_error = ferror
 
 		if (filters[j] == 'NRC_F335M'):
-			filter_index = 11
-			pixel_area = 3.14159265 * ap_radius * ap_radius / (pixel_size[filter_index] * pixel_size[filter_index])
 			final_number_filters = final_number_filters + 1
 			final_filters = np.append(final_filters, ['NRC_F335M'])
 			filter_found = 1
+			nrc_filter_index = 5
 			flux_value = apparent_flux[j][x]
-			filt_bkgnd = pixel_area * bkgnd_nJy[filter_index]
+			filt_bkgnd = pix_area_LW * bkgnd_nJy[nrc_filter_index]
 			flux = ap_corr * flux_value + filt_bkgnd
-			ftemp = flux * e_sec_nJy[filter_index]
-			ferror = np.sqrt(ftemp * time[filter_index] + (read_noise[filter_index]*pixel_area)*(read_noise[filter_index]*pixel_area))							
-			ferror = ferror / (e_sec_nJy[filter_index] * time[filter_index])
+			ftemp = flux * e_sec_nJy[nrc_filter_index]
+			ferror = np.sqrt(ftemp * time[nrc_filter_index] + (9.0*pix_area_LW)*(9.0*pix_area_LW))						
+			ferror = ferror / (e_sec_nJy[nrc_filter_index] * time[nrc_filter_index])
 			ftemp = ferror * np.random.normal()
 			flux_value_noisy = ap_corr * flux_value + ftemp
 			flux_error = ferror
 
 		if (filters[j] == 'NRC_F356W'):
-			filter_index = 12
-			pixel_area = 3.14159265 * ap_radius * ap_radius / (pixel_size[filter_index] * pixel_size[filter_index])
 			final_number_filters = final_number_filters + 1
 			final_filters = np.append(final_filters, ['NRC_F356W'])
 			filter_found = 1
+			nrc_filter_index = 6
 			flux_value = apparent_flux[j][x]
-			filt_bkgnd = pixel_area * bkgnd_nJy[filter_index]
+			filt_bkgnd = pix_area_LW * bkgnd_nJy[nrc_filter_index]
 			flux = ap_corr * flux_value + filt_bkgnd
-			ftemp = flux * e_sec_nJy[filter_index]
-			ferror = np.sqrt(ftemp * time[filter_index] + (read_noise[filter_index]*pixel_area)*(read_noise[filter_index]*pixel_area))							
-			ferror = ferror / (e_sec_nJy[filter_index] * time[filter_index])
+			ftemp = flux * e_sec_nJy[nrc_filter_index]
+			ferror = np.sqrt(ftemp * time[nrc_filter_index] + (9.0*pix_area_LW)*(9.0*pix_area_LW))						
+			ferror = ferror / (e_sec_nJy[nrc_filter_index] * time[nrc_filter_index])
 			ftemp = ferror * np.random.normal()
 			flux_value_noisy = ap_corr * flux_value + ftemp
 			flux_error = ferror
 
 		if (filters[j] == 'NRC_F410M'):
-			filter_index = 13
-			pixel_area = 3.14159265 * ap_radius * ap_radius / (pixel_size[filter_index] * pixel_size[filter_index])
 			final_number_filters = final_number_filters + 1
 			final_filters = np.append(final_filters, ['NRC_F410M'])
 			filter_found = 1
+			nrc_filter_index = 7
 			flux_value = apparent_flux[j][x]
-			filt_bkgnd = pixel_area * bkgnd_nJy[filter_index]
+			filt_bkgnd = pix_area_LW * bkgnd_nJy[nrc_filter_index]
 			flux = ap_corr * flux_value + filt_bkgnd
-			ftemp = flux * e_sec_nJy[filter_index]
-			ferror = np.sqrt(ftemp * time[filter_index] + (read_noise[filter_index]*pixel_area)*(read_noise[filter_index]*pixel_area))							
-			ferror = ferror / (e_sec_nJy[filter_index] * time[filter_index])
+			ftemp = flux * e_sec_nJy[nrc_filter_index]
+			ferror = np.sqrt(ftemp * time[nrc_filter_index] + (9.0*pix_area_LW)*(9.0*pix_area_LW))					
+			ferror = ferror / (e_sec_nJy[nrc_filter_index] * time[nrc_filter_index])
 			ftemp = ferror * np.random.normal()
 			flux_value_noisy = ap_corr * flux_value + ftemp
 			flux_error = ferror
 
 		if (filters[j] == 'NRC_F444W'):
-			filter_index = 14
-			pixel_area = 3.14159265 * ap_radius * ap_radius / (pixel_size[filter_index] * pixel_size[filter_index])
 			final_number_filters = final_number_filters + 1
 			final_filters = np.append(final_filters, ['NRC_F444W'])
 			filter_found = 1
+			nrc_filter_index = 8
 			flux_value = apparent_flux[j][x]
-			filt_bkgnd = pixel_area * bkgnd_nJy[filter_index]
+			filt_bkgnd = pix_area_LW * bkgnd_nJy[nrc_filter_index]
 			flux = ap_corr * flux_value + filt_bkgnd
-			ftemp = flux * e_sec_nJy[filter_index]
-			ferror = np.sqrt(ftemp * time[filter_index] + (read_noise[filter_index]*pixel_area)*(read_noise[filter_index]*pixel_area))							
-			ferror = ferror / (e_sec_nJy[filter_index] * time[filter_index])
+			ftemp = flux * e_sec_nJy[nrc_filter_index]
+			ferror = np.sqrt(ftemp * time[nrc_filter_index] + (9.0*pix_area_LW)*(9.0*pix_area_LW))							
+			ferror = ferror / (e_sec_nJy[nrc_filter_index] * time[nrc_filter_index])
 			ftemp = ferror * np.random.normal()
 			flux_value_noisy = ap_corr * flux_value + ftemp
 			flux_error = ferror
@@ -552,6 +502,3 @@ if (args.make_fits):
 	# And finally, let's write out the output file.
 	outtab = Table(output_data, names=colnames, dtype=dtype)
 	outtab.write(filenameroot+'.fits')
-
-
-

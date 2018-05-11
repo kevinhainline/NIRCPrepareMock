@@ -182,14 +182,16 @@ optional arguments:
 
 ```
 
-`% python ComparePhotoZ_to_SpecZ.py -input /Path/To/Input/Noisy/Photometry/all_fluxes_5_1_18_noisy.dat -nrcf NRC_F200W -snrl 5 -eazy /Path/To/EAZY/output/photz.zout -jaguar /Path/To/Your/Mock_Catalog_Files/ -jparam sSFR -mp`
+`% python ComparePhotoZ_to_SpecZ.py -input /Path/To/Input/Noisy/Photometry/all_fluxes_5_1_18_noisy.dat -nrcf NRC_F200W -snrl 5 -eazy /Path/To/EAZY/output/photz.zout -jaguar /Path/To/Your/Mock_Catalog_Files/ -jparam sSFR -mp -outliers  -outf /Path/To/Optional/Output/Folder/`
 
 In this example, we point to the full set of noisy photometry from `Subsample_to_NoisySubsample.py`, and
 then I specify the SNR filter, and the SNR level, for files that cut down on noisy, low
 SNR objects. Then I specify that I want to do an EAZY analysis by pointing to the EAZY
 output file. I then point to the JAGUAR mock file and specify a galaxy parameter
-for making spec-z vs. photo-z plots colored by that parameter. Finally, I specify
-that we'd like to make the plots instead of just producing statistics.
+for making spec-z vs. photo-z plots colored by that parameter. Next, I specify
+that we'd like to make the plots instead of just producing statistics, and I say that I
+want to produce outlier files of the objects with `delta_z > 0.15`. I then specify the
+optional output folder for putting all of the files.  
 
 The statistics that are produced are:
 

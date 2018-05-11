@@ -12,6 +12,8 @@ from astropy.table import Table
 from PlottingFunctions import *
 
 filter_file_name = 'NoisySubsample_to_PhotoZInput_filters.dat'
+noisy_jades_filters = ['HST_F435W', 'HST_F606W', 'HST_F775W', 'HST_F814W', 'HST_F850LP', 'NRC_F070W', 'NRC_F090W', 'NRC_F115W', 'NRC_F150W', 'NRC_F200W', 'NRC_F277W', 'NRC_F335M', 'NRC_F356W', 'NRC_F410M', 'NRC_F444W']
+number_jades_filters = len(noisy_jades_filters)
 
 # Which version of the mock are you using
 JAGUAR_version = 'r1_v1.1'
@@ -59,6 +61,16 @@ parser.add_argument(
 ######################
 # Optional Arguments #
 ######################
+
+# Optional Output Folder
+parser.add_argument(
+  '-outf','--opt_output_folder',
+  help="Optional Output Folder?",
+  action="store",
+  type=str,
+  dest="opt_output_folder",
+  required=False
+)
 
 # Analyze EAZY output file
 parser.add_argument(
@@ -129,6 +141,15 @@ parser.add_argument(
   required=False
 )
 
+# Explore Outliers?
+parser.add_argument(
+  '-outliers',
+  help="Calculate Catastrophic Outliers?",
+  action="store_true",
+  dest="outliers",
+  required=False
+)
+
 # Original JAGUAR Catalog Path
 parser.add_argument(
   '-jaguar','--jaguar_path',
@@ -150,6 +171,16 @@ parser.add_argument(
 )
 
 args=parser.parse_args()
+
+if (args.opt_output_folder):
+	optional_output_folder = args.opt_output_folder
+	if not optional_output_folder.endswith("/"):
+		optional_output_folder = optional_output_folder + "/"
+	if not os.path.exists(optional_output_folder):
+	    os.makedirs(optional_output_folder)
+else:
+	optional_output_folder = ""
+	
 
 # Set the minimum and maximum redshifts
 if (args.minimum_z):
@@ -174,15 +205,9 @@ filters_full = np.loadtxt(filter_file_name, dtype='str')
 header_filters = filters_full[:,0]
 number_filters = len(header_filters)
 
-filter_index_array = np.where(header_filters == args.nircam_filter)[0]
-if not filter_index_array:
-  sys.exit("Specified filter: "+args.nircam_filter+", is not in the list")
-else:
-	filter_index = filter_index_array[0]
-
 # args.input_photometry
 if (args.input_photometry.endswith('.fits')):
-	fitsinput = fits.open(args.input_file)
+	fitsinput = fits.open(args.input_photometry)
 	ID_values = fitsinput[1].data['ID']
 	redshifts = fitsinput[1].data['redshift']
 	number_objects = ID_values.size
@@ -191,8 +216,17 @@ if (args.input_photometry.endswith('.fits')):
 	NIRc_err = fitsinput[1].data[args.nircam_filter+'_err']
 
 else:
+	filter_index_array = -99
+	for x in range(0, number_jades_filters):
+		if (noisy_jades_filters[x] == args.nircam_filter):
+			filter_index_array = x
+	if (filter_index_array < 0):
+		sys.exit("Specified filter: "+args.nircam_filter+", is not in the list")
+	else:
+		filter_index = filter_index_array
+
 	full_input_file = np.loadtxt(args.input_photometry)
-	
+
 	ID_values = full_input_file[:,0]
 	redshifts = full_input_file[:,1]
 	NIRc_flux = full_input_file[:,(filter_index+1)*2]
@@ -208,7 +242,6 @@ for x in range(0, number_objects):
 	else:
 		NIRc_mag[x] = 99.99
 		NIRc_SNR[x] = 0.00
-#NIRc_mag = FluxtoABMag(NIRc_flux*1e-23*1e-9)
 
 
 # Now, let's calculate the SNR ratio for our filter of choice:
@@ -275,7 +308,8 @@ if ((path_to_jaguar_cat_given == 1) and (jaguar_param_given == 1)):
 
 # EAZY
 if (args.eazy_output_file):
-	output_folder = 'EAZY_analysis/'
+	version = 'EAZY'
+	output_folder = optional_output_folder+'EAZY_analysis/'
 	if not os.path.exists(output_folder):
 	    os.makedirs(output_folder)
 
@@ -285,10 +319,12 @@ if (args.eazy_output_file):
 	z_phot = output_zs[:,13]
 
 	title_for_plot = 'EAZY Results'
+	
 
 # Le Phare
 if (args.lephare_output_file):
-	output_folder = 'LePhare_analysis/'
+	version = 'LePhare'
+	output_folder = optional_output_folder+'LePhare_analysis/'
 	if not os.path.exists(output_folder):
 	    os.makedirs(output_folder)
 
@@ -301,7 +337,8 @@ if (args.lephare_output_file):
 
 # BPZ
 if (args.bpz_output_file):
-	output_folder = 'BPZ_analysis/'
+	version = 'BPZ'
+	output_folder = optional_output_folder+'BPZ_analysis/'
 	if not os.path.exists(output_folder):
 	    os.makedirs(output_folder)
 
@@ -312,7 +349,7 @@ if (args.bpz_output_file):
 
 	title_for_plot = 'BPZ Results'
 
-
+IDs_highSNR = np.zeros(n_highSNR_objects)
 zspec_highSNR = np.zeros(n_highSNR_objects)
 zphot_highSNR = np.zeros(n_highSNR_objects)
 NIRc_mag_highSNR = np.zeros(n_highSNR_objects)
@@ -326,7 +363,8 @@ for x in range(0, n_objects):
 		zspec_highSNR[x_highSNR_objects] = z_spec[x]
 		zphot_highSNR[x_highSNR_objects] = z_phot[x]
 		NIRc_mag_highSNR[x_highSNR_objects] = NIRc_mag[x]
-
+		IDs_highSNR[x_highSNR_objects] = ID_values[x]
+		
 		logNIRc_highSNR[x_highSNR_objects] = logNIRc_SNR[x]
 		if ((path_to_jaguar_cat_given == 1) and (jaguar_param_given == 1)):
 			catalog_photoz_param_highSNR[x_highSNR_objects] = catalog_photoz_param[x]
@@ -367,7 +405,7 @@ NMAD_SNR_5 = 1.48 * astropy.stats.median_absolute_deviation(residuals_SNR_5)
 fraction_gt_15_SNR_5 = len(np.where(abs(residuals_SNR_5) > 0.15)[0])*1.0/len(abs(residuals_SNR_5))*1.0
 #skewness_SNR_5 = scipy.stats.skew(residuals_SNR_5)
 
-print ""+args.nircam_filter+"_SNR > 5"
+print ""+args.nircam_filter+"_SNR > "+str(args.snr_limit)
 print " bias = %.3f +/- %.3f" % (residual_mean_SNR_5, residual_std_SNR_5)
 print " sigma_68 = %.3f" % (residual_68_value_SNR_5)
 print " NMAD = %.3f" % (NMAD_SNR_5)
@@ -375,6 +413,95 @@ print " fraction (> 0.15) = %.3f" % (fraction_gt_15_SNR_5)
 #print " skewness = %.3f" % (skewness)
 print "------------------"
 
+
+# # # # # # # # # # # # # #
+#  Catastrophic Outliers  #
+# # # # # # # # # # # # # #
+
+if (args.outliers):
+	catastrophic_outlier_IDs = find_catastrophic_outliers(ID_values, z_spec, z_phot)
+	n_catastrophic_outliers = len(catastrophic_outlier_IDs)
+	catastrophic_outlier_IDs_highSNR = find_catastrophic_outliers(IDs_highSNR, zspec_highSNR, zphot_highSNR)
+	n_catastrophic_outliers_highSNR = len(catastrophic_outlier_IDs_highSNR)
+
+	f = open(output_folder+version+'_catastrophic_outliers.dat', 'a')
+	g = open(output_folder+version+'_catastrophic_outliers_SNR_gt_'+str(args.snr_limit)+'.dat', 'a')
+
+	# Now I need to output these IDs to a noisy input file, for creating Photo-Z Input Models. 
+	if (args.input_photometry.endswith('.fits')):
+				
+		for x in range(0, n_catastrophic_outliers):
+			ID_index_cat = np.where(ID_values == catastrophic_outlier_IDs[x])[0][0]
+			ID_value_cat = ID_values[ID_index_cat]
+			redshift_cat = redshifts[ID_index_cat]
+			f.write(str(ID_value_cat)+' '+str(redshift_cat)+'  ')
+			for y in range(0, number_jades_filters):
+				flux_value_cat = fitsinput[1].data[noisy_jades_filters[y]][ID_index_cat]
+				flux_value_err_cat = fitsinput[1].data[noisy_jades_filters[y]+'_err'][ID_index_cat]
+#			for y in range(0, number_filters):
+#				flux_value_cat = fitsinput[1].data[header_filters[y]][ID_index_cat]
+#				flux_value_err_cat = fitsinput[1].data[header_filters[y]+'_err'][ID_index_cat]
+				f.write(str(flux_value_cat)+' '+str(flux_value_err_cat)+'  ')
+			f.write('\n')
+		
+		for x in range(0, n_catastrophic_outliers_highSNR):
+			ID_index_cat_highSNR = np.where(ID_values == catastrophic_outlier_IDs_highSNR[x])[0][0]
+			ID_value_cat_highSNR = ID_values[ID_index_cat_highSNR]
+			redshift_cat_highSNR = redshifts[ID_index_cat_highSNR]
+			g.write(str(ID_value_cat_highSNR)+' '+str(redshift_cat_highSNR)+'  ')
+			for y in range(0, number_jades_filters):
+				flux_value_cat_highSNR = fitsinput[1].data[noisy_jades_filters[y]][ID_index_cat_highSNR]
+				flux_value_err_cat_highSNR = fitsinput[1].data[noisy_jades_filters[y]+'_err'][ID_index_cat_highSNR]
+#			for y in range(0, number_filters):
+#				flux_value_cat_highSNR = fitsinput[1].data[header_filters[y]][ID_index_cat_highSNR]
+#				flux_value_err_cat_highSNR = fitsinput[1].data[header_filters[y]+'_err'][ID_index_cat_highSNR]
+				g.write(str(flux_value_cat_highSNR)+' '+str(flux_value_err_cat_highSNR)+'  ')
+			g.write('\n')
+	
+	else:
+
+		for x in range(0, n_catastrophic_outliers):
+			ID_index_cat = np.where(ID_values == catastrophic_outlier_IDs[x])[0][0]
+			ID_value_cat = ID_values[ID_index_cat]
+			redshift_cat = redshifts[ID_index_cat]
+			f.write(str(ID_value_cat)+' '+str(redshift_cat)+'  ')
+			for y in range(0, number_jades_filters):
+				flux_value_cat = full_input_file[ID_index_cat,(y+1)*2]
+				flux_value_err_cat = full_input_file[ID_index_cat,((y+1)*2)+1]
+#			for y in range(0, number_filters):
+#				for k in range(0, number_jades_filters):
+#					if (header_filters[y] == noisy_jades_filters[k]):
+#						flux_value_cat = full_input_file[ID_index_cat,(k+1)*2]
+#						flux_value_err_cat = full_input_file[ID_index_cat,((k+1)*2)+1]
+				f.write(str(flux_value_cat)+' '+str(flux_value_err_cat)+'  ')
+			f.write('\n')
+			
+		for x in range(0, n_catastrophic_outliers_highSNR):
+			ID_index_cat_highSNR = np.where(ID_values == catastrophic_outlier_IDs_highSNR[x])[0][0]
+			ID_value_cat_highSNR = ID_values[ID_index_cat_highSNR]
+			redshift_cat_highSNR = redshifts[ID_index_cat_highSNR]
+			g.write(str(ID_value_cat_highSNR)+' '+str(redshift_cat_highSNR)+'  ')
+			for y in range(0, number_jades_filters):
+				flux_value_cat_highSNR = full_input_file[ID_index_cat_highSNR,(y+1)*2]
+				flux_value_err_cat_highSNR = full_input_file[ID_index_cat_highSNR,((y+1)*2)+1]
+#			for y in range(0, number_filters):
+#				for k in range(0, number_jades_filters):
+#					if (header_filters[y] == noisy_jades_filters[k]):
+#						flux_value_cat_highSNR = full_input_file[ID_index_cat_highSNR,(k+1)*2]
+#						flux_value_err_cat_highSNR = full_input_file[ID_index_cat_highSNR,((k+1)*2)+1]
+				g.write(str(flux_value_cat_highSNR)+' '+str(flux_value_err_cat_highSNR)+'  ')
+			g.write('\n')
+			
+		#full_input_file = np.loadtxt(args.input_photometry)
+		
+		#ID_values = full_input_file[:,0]
+		#redshifts = full_input_file[:,1]
+		#NIRc_flux = full_input_file[:,(filter_index+1)*2]
+		#NIRc_err = full_input_file[:,((filter_index+1)*2)+1]
+		#number_objects = len(ID_values)
+
+	f.close()
+	g.close()
 
 # # # # # # # # #
 #  Make  Plots  #

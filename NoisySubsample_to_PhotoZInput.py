@@ -8,6 +8,10 @@ from astropy.io import fits
 from astropy.table import Table
 
 filter_file_name = 'NoisySubsample_to_PhotoZInput_filters.dat'
+# The filters to be used in the JADES survey, and also the 
+# filters that are used in the noisy files. 
+noisy_jades_filters = ['HST_F435W', 'HST_F606W', 'HST_F775W', 'HST_F814W', 'HST_F850LP', 'NRC_F070W', 'NRC_F090W', 'NRC_F115W', 'NRC_F150W', 'NRC_F200W', 'NRC_F277W', 'NRC_F335M', 'NRC_F356W', 'NRC_F410M', 'NRC_F444W']
+number_jades_filters = len(noisy_jades_filters)
 
 ######################
 # Required Arguments #
@@ -165,9 +169,12 @@ else:
 	for n in range(0, number_objects):
 		ID_values[n] = full_input_file[n][0]
 		redshifts[n] = full_input_file[n][1]
-		fluxes_all[n,:] = full_input_file[n][::2][1:number_filters+1]
-		errors_all[n,:] = full_input_file[n][1::2][1:number_filters+1]
-	
+		for j in range(0, number_filters):
+			for k in range(0, number_jades_filters):
+				if (noisy_jades_filters[k] == header_filters[j]):
+					fluxes_all[n,j] = full_input_file[n,(k+1)*2]
+					errors_all[n,j] = full_input_file[n,((k+1)*2)+1]
+
 # Convert the fluxes and errors to ergs/s/cm^2/Hz, since they're in nJy (I assume)
 fluxes_all_ergs = fluxes_all * 1e-23 * 1e-9
 errors_all_ergs = errors_all * 1e-23 * 1e-9
