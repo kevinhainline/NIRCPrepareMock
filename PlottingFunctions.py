@@ -26,11 +26,13 @@ def residuals_68(residuals):
 	number_objects = len(sorted_residuals)
 	return sorted_residuals[int(number_objects * 0.68)-1]
 
-def find_catastrophic_outliers(IDs, z_spec, z_phot):
+def find_catastrophic_outliers(IDs, z_spec, z_phot, outlier_faction_value): 
 	residual = abs((z_spec - z_phot) / (1 + z_spec))
-	catastrophic_indices = np.where(residual > 0.5)[0]
+	catastrophic_indices = np.where(residual > outlier_faction_value)[0]
 	catastrophic_outlier_IDs = IDs[catastrophic_indices]
-	return catastrophic_outlier_IDs
+	catastrophic_outlier_z_spec = z_spec[catastrophic_indices]
+	catastrophic_outlier_z_phot = z_phot[catastrophic_indices]
+	return catastrophic_outlier_IDs, catastrophic_outlier_z_spec, catastrophic_outlier_z_phot
 	
 
 def plotty(data1, data2, color_data, name, filtername, title_for_plot, min_redshift, max_redshift, colorlabel):
@@ -130,10 +132,6 @@ def photz_specz_offset(z_spec, z_phot, color_data, name, filtername, title_for_p
 	ax2.plot([min_redshift, max_redshift],[0, 0], color = 'black')
 	ax2.plot([min_redshift, max_redshift],[-0.15, -0.15], '-', color = 'grey', alpha = 0.7, label = '(z$_{spec}$ - z$_{phot}$) / (1 + z$_{spec}$) = +/- 0.15')
 	ax2.plot([min_redshift, max_redshift],[0.15, 0.15], '-', color = 'grey', alpha = 0.7)
-#	ax2.plot([min_redshift, max_redshift],[-0.10, -0.10], '-', color = 'grey', alpha = 0.5, label = '(z$_{spec}$ - z$_{phot}$) / (1 + z$_{spec}$) = +/- 0.10')
-#	ax2.plot([min_redshift, max_redshift],[0.10, 0.10], '-', color = 'grey', alpha = 0.5)
-#	ax2.plot([min_redshift, max_redshift],[-0.05, -0.05], '-', color = 'grey', alpha = 0.9, label = '(z$_{spec}$ - z$_{phot}$) / (1 + z$_{spec}$) = +/- 0.05')
-#	ax2.plot([min_redshift, max_redshift],[0.05, 0.05], '-', color = 'grey', alpha = 0.9)
 	ax2.plot([min_redshift, max_redshift],[-0.5, -0.5], '-', color = 'grey', alpha = 0.2, label = '(z$_{spec}$ - z$_{phot}$) / (1 + z$_{spec}$) = +/- 0.5')
 	ax2.plot([min_redshift, max_redshift],[0.5, 0.5], '-', color = 'grey', alpha = 0.2)
 	ax2.axis([min_redshift, max_redshift, -1, 1])
@@ -142,6 +140,60 @@ def photz_specz_offset(z_spec, z_phot, color_data, name, filtername, title_for_p
 
 	plt.savefig(name, format='png', dpi=600)
 	
+
+def catastrophic_outlier_plots(z_spec, z_phot, catastrophic_z_spec, catastrophic_z_phot, name, title_for_plot, min_redshift, max_redshift):
+	fig = plt.figure(figsize=(6,8))
+	ax1 = fig.add_subplot(211)
+
+	b = np.arange(0,max_redshift+1)
+
+#	cax = ax1.scatter(z_spec, z_phot, s=5.0, c=color_data, edgecolors='none')
+	ax1.scatter(z_spec, z_phot, s=5.0, color = 'grey', edgecolors='none')
+	ax1.scatter(catastrophic_z_spec, catastrophic_z_phot, s=5.0, color = 'red', edgecolors='none')
+	
+	ax1.plot(b, b, c='black', linewidth = 1.5)
+
+	ax1.set_xlim([0.2, max_redshift])
+	ax1.set_ylim([-0.1, max_redshift])
+
+	zspec_vals = np.arange(0,15,0.1)
+	zphot_vals_015_pos = zspec_vals + (0.15 * (1+zspec_vals))
+	zphot_vals_015_neg = zspec_vals - (0.15 * (1+zspec_vals))
+	zphot_vals_050_pos = zspec_vals + (0.50 * (1+zspec_vals))
+	zphot_vals_050_neg = zspec_vals - (0.50 * (1+zspec_vals))
+
+	ax1.plot(zspec_vals, zphot_vals_015_pos, '-', color = 'grey', alpha = 0.7, label = '(z$_{spec}$ - z$_{phot}$) / (1 + z$_{spec}$) = 0.15')
+	ax1.plot(zspec_vals, zphot_vals_015_neg, '-', color = 'grey', alpha = 0.7, label = '(z$_{spec}$ - z$_{phot}$) / (1 + z$_{spec}$) = 0.15')
+
+	ax1.plot(zspec_vals, zphot_vals_050_pos, '-', color = 'grey', alpha = 0.2, label = '(z$_{spec}$ - z$_{phot}$) / (1 + z$_{spec}$) = 0.50')
+	ax1.plot(zspec_vals, zphot_vals_050_neg, '-', color = 'grey', alpha = 0.2, label = '(z$_{spec}$ - z$_{phot}$) / (1 + z$_{spec}$) = 0.50')
+
+
+	ax1.set_xlabel('$z_{spec}$')
+	ax1.set_ylabel('$z_{phot}$')
+	ax1.set_title(title_for_plot)
+
+	ax2 = fig.add_subplot(212)
+	# Offset vs. Spec-z
+	norm_diff = (z_spec - z_phot) / (1 + z_spec)
+	norm_diff_catastrophic = (catastrophic_z_spec - catastrophic_z_phot) / (1 + catastrophic_z_spec)
+	
+	cax = ax2.scatter(z_spec, norm_diff, color = 'grey', s = 5, edgecolors='none')
+	cax = ax2.scatter(catastrophic_z_spec, norm_diff_catastrophic, color = 'red', s = 5, edgecolors='none')
+	#ax2.title(title)
+	ax2.set_xlabel('z$_{spec}$')
+	ax2.set_ylabel('(z$_{spec}$ - z$_{phot}$) / (1 + z$_{spec}$)')
+	ax2.plot([min_redshift, max_redshift],[0, 0], color = 'black')
+	ax2.plot([min_redshift, max_redshift],[-0.15, -0.15], '-', color = 'grey', alpha = 0.7, label = '(z$_{spec}$ - z$_{phot}$) / (1 + z$_{spec}$) = +/- 0.15')
+	ax2.plot([min_redshift, max_redshift],[0.15, 0.15], '-', color = 'grey', alpha = 0.7)
+	ax2.plot([min_redshift, max_redshift],[-0.5, -0.5], '-', color = 'grey', alpha = 0.2, label = '(z$_{spec}$ - z$_{phot}$) / (1 + z$_{spec}$) = +/- 0.5')
+	ax2.plot([min_redshift, max_redshift],[0.5, 0.5], '-', color = 'grey', alpha = 0.2)
+	ax2.axis([min_redshift, max_redshift, -1, 1])
+	ax2.legend()
+
+	plt.savefig(name, format='png', dpi=600)
+	
+
 
 def plot_deltazvsz(data1, data2, NIRcSNR, name, filtername):
 	fig = plt.figure(figsize=(7,6))

@@ -320,7 +320,6 @@ if (args.eazy_output_file):
 
 	title_for_plot = 'EAZY Results'
 	
-
 # Le Phare
 if (args.lephare_output_file):
 	version = 'LePhare'
@@ -346,6 +345,7 @@ if (args.bpz_output_file):
 	ids = output_zs[:,0]
 	z_spec = redshifts
 	z_phot = output_zs[:,1]
+	#z_phot = output_zs[:,8]
 
 	title_for_plot = 'BPZ Results'
 
@@ -419,13 +419,18 @@ print "------------------"
 # # # # # # # # # # # # # #
 
 if (args.outliers):
-	catastrophic_outlier_IDs = find_catastrophic_outliers(ID_values, z_spec, z_phot)
+	outlier_faction_value = 0.15
+	catastrophic_outlier_IDs, catastrophic_outlier_z_spec, catastrophic_outlier_z_phot = find_catastrophic_outliers(ID_values, z_spec, z_phot, outlier_faction_value)
 	n_catastrophic_outliers = len(catastrophic_outlier_IDs)
-	catastrophic_outlier_IDs_highSNR = find_catastrophic_outliers(IDs_highSNR, zspec_highSNR, zphot_highSNR)
+	catastrophic_outlier_IDs_highSNR, catastrophic_outlier_z_spec_highSNR, catastrophic_outlier_z_phot_highSNR = find_catastrophic_outliers(IDs_highSNR, zspec_highSNR, zphot_highSNR, outlier_faction_value)
 	n_catastrophic_outliers_highSNR = len(catastrophic_outlier_IDs_highSNR)
+	
+	catastrophic_folder = 'catastrophic_outliers/'
+	if not os.path.exists(output_folder+catastrophic_folder):
+	    os.makedirs(output_folder+catastrophic_folder)
 
-	f = open(output_folder+version+'_catastrophic_outliers.dat', 'a')
-	g = open(output_folder+version+'_catastrophic_outliers_SNR_gt_'+str(args.snr_limit)+'.dat', 'a')
+	f = open(output_folder+catastrophic_folder+version+'_catastrophic_outliers.dat', 'a')
+	g = open(output_folder+catastrophic_folder+version+'_catastrophic_outliers_SNR_gt_'+str(args.snr_limit)+'.dat', 'a')
 
 	# Now I need to output these IDs to a noisy input file, for creating Photo-Z Input Models. 
 	if (args.input_photometry.endswith('.fits')):
@@ -502,6 +507,11 @@ if (args.outliers):
 
 	f.close()
 	g.close()
+	
+	name = output_folder+catastrophic_folder+'/catastrophic_outlier_zspec_vs_zphot.png'
+	catastrophic_outlier_plots(z_spec, z_phot, catastrophic_outlier_z_spec, catastrophic_outlier_z_phot, name, title_for_plot, min_redshift, max_redshift)
+	name = output_folder+catastrophic_folder+'/catastrophic_outlier_zspec_vs_zphot_highSNR.png'
+	catastrophic_outlier_plots(zspec_highSNR, zphot_highSNR, catastrophic_outlier_z_spec_highSNR, catastrophic_outlier_z_phot_highSNR, name, title_for_plot, min_redshift, max_redshift)
 
 # # # # # # # # #
 #  Make  Plots  #

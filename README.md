@@ -162,6 +162,8 @@ optional arguments:
                         NIRCam filter for SNR analysis?
   -snrl SNR_LIMIT, --snr_limit SNR_LIMIT
                         SNR Limit for analysis?
+  -outf OPT_OUTPUT_FOLDER, --opt_output_folder OPT_OUTPUT_FOLDER
+                        Optional Output Folder?
   -eazy EAZY_OUTPUT_FILE, --eazy_output_file EAZY_OUTPUT_FILE
                         Analyze EAZY output?
   -bpz BPZ_OUTPUT_FILE, --bpz_output_file BPZ_OUTPUT_FILE
@@ -175,6 +177,7 @@ optional arguments:
   -maxz MAXIMUM_Z, --maximum_z MAXIMUM_Z
                         Maximum Redshift for Analysis
   -mp, --make_plots     Make Plots?
+  -outliers             Calculate Catastrophic Outliers?
   -jaguar JAGUAR_PATH, --jaguar_path JAGUAR_PATH
                         Path to JAGUAR Catalogs?
   -jparam JAGUAR_PARAM, --jaguar_param JAGUAR_PARAM
