@@ -44,7 +44,6 @@ def return_true_spectrum(ID):
 	if (ID > max_sf_ID):
 	    full_mock_SED_file = '/Volumes/KNH_EXTERNAL/Mock_v1.1_SEDs/JADES_Q_mock_r1_v1.1_spec_5A.fits'
 	
-	print full_mock_SED_file
 	sedfits = fits.open(full_mock_SED_file)
 	ID_index = np.where(sedfits[3].data['ID'] == ID)
 	return sedfits[2].data, sedfits[1].data[ID_index][0]

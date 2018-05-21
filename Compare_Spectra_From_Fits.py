@@ -89,6 +89,16 @@ parser.add_argument(
   required=False
 )
 
+# ID number
+parser.add_argument(
+  '-id','--id_number',
+  help="ID Number?",
+  action="store",
+  type=int,
+  dest="id_number",
+  required=False
+)
+
 args=parser.parse_args()
 
 if (args.opt_output_folder):
@@ -100,7 +110,13 @@ if (args.opt_output_folder):
 else:
 	optional_output_folder = ""
 
+if (args.id_number):
+	ID_number = args.id_number
+else:
+	sys.exit("Need to specify an ID number! ")
 
+
+print "Opening up Input Photometry"
 # Open up the input photometry 
 # args.input_photometry
 if (args.input_photometry.endswith('.fits')):
@@ -133,6 +149,7 @@ else:
 
 # EAZY
 if (args.eazy_output_folder):
+	print "EAZY Analysis on object: "+str(ID_number)
 	version = 'EAZY'
 	output_folder = optional_output_folder+'EAZY_analysis/'
 	#if not os.path.exists(output_folder):
@@ -150,22 +167,21 @@ if (args.eazy_output_folder):
 	tempfilt, z_grid, obs_sed, templam, temp_sed = generate_sed_arrays(MAIN_OUTPUT_FILE='photz', OUTPUT_DIRECTORY=args.eazy_output_folder, CACHE_FILE='Same')
         
 	#idx = 4864
-	ID_number = 76901
-	print np.where(ids == ID_number)
-	idx = np.where(ids == ID_number)[0][0]
+	#ID_number = 76901
+
+	idx_value = np.where(ids == ID_number)[0]
+	if not idx_value:
+	  sys.exit("Need to specify a valid ID number! ")
+	else:
+		idx = idx_value[0]
 	plt.errorbar(tempfilt['lc'], tempfilt['fnu'][:,idx]/1e-23/1e-9,
-		tempfilt['efnu'][:,idx]/1e-23/1e-9, marker='.', color='k',
-		linestyle='None', zorder=1000, label='Data')
-	                  
-	#plt.plot(tempfilt['lc'], obs_sed[:,idx], marker='.', color='r', alpha=0.8,
-	#	label='Template photometry')
-	
-	plt.scatter(tempfilt['lc'], obs_sed[:,idx]/1e-23/1e-9, color='r', alpha=0.8, s = 30, label='Template photometry')
-	
-	plt.plot(templam*(1+z_grid[idx]), temp_sed[:,idx]/1e-23/1e-9, color='b', alpha=0.8, label='Template spectrum')
-	
-	plt.scatter(noisy_jades_wave*10000, flux_value_cat[idx,:], color = 'green', label='Noisy Input Flux', alpha = 0.2)
-	
+		tempfilt['efnu'][:,idx]/1e-23/1e-9, color='green', markersize='60', alpha = 0.8, 
+		linestyle='None', zorder=1000)
+#	plt.errorbar(tempfilt['lc'], tempfilt['fnu'][:,idx]/1e-23/1e-9,
+#		tempfilt['efnu'][:,idx]/1e-23/1e-9, marker='.', color='green', alpha = 0.8, 
+#		linestyle='None', zorder=1000, label='Data')
+
+	# GETTING THE TRUE SPECTRUM
 	start_time = time.time()
 	print "Starting to get true spectrum. "
 	print int(ID_values[idx])
@@ -174,25 +190,25 @@ if (args.eazy_output_folder):
 	delta_time = end_time - start_time
 	print "Done! It took: "+str(delta_time)
 
-#	print len(true_wavelength)
-#	print true_wavelength
-#	print len(spectrum_obj)
-#	print spectrum_obj
+	                  	
+	#
+	# START PLOTTING
+	# 
+	plt.scatter(tempfilt['lc'], obs_sed[:,idx]/1e-23/1e-9, color='r', alpha=0.8, s = 60, label='Template Photometry')
+	plt.plot(templam*(1+z_grid[idx]), temp_sed[:,idx]/1e-23/1e-9, color='b', alpha=0.8, label='Template Spectrum')
+	plt.scatter(noisy_jades_wave*10000, flux_value_cat[idx,:], color = 'green', s = 60, label='Noisy Input Flux', alpha = 0.8)
 	
+	# PLOT THE TRUE SPECTRUM	
 	sf_spec_array_fnu = (spectrum_obj/(1.0+z_spec[idx]) * ((1.0+z_spec[idx]) * true_wavelength)**2 / c) 
 	sf_wave_z = np.array((1.0+z_spec[idx]) * true_wavelength)
 	sf_flux_nJy = np.array(sf_spec_array_fnu/1e-23/1e-9)
-
-#	print sf_wave_z
-#	print sf_flux_nJy
-	
 	plt.plot(sf_wave_z, sf_flux_nJy, color = 'orange', label = 'Input Spectrum', alpha = 0.6)
 	
+	# GET THE MIN/MAX VALUES
 	min_flux = np.min(flux_value_cat[idx,:])
 	if (min_flux < 1e-2):
 		min_flux = 1e-2
 	max_flux = np.max(flux_value_cat[idx,:])
-	
 	y_axis_difference = max_flux - min_flux
 	
 	plt.text(3200, min_flux + 1.8*y_axis_difference, 'ID = '+str(int(ID_values[idx])))

@@ -169,7 +169,7 @@ redshift_maximum = 15.0
 redshift_range = np.arange(redshift_minimum, redshift_maximum+1.0, 1.0)
 n_redshift_bins = len(redshift_range - 1)
 if (args.number_per_redshift_bin):
-	number_per_redshift_bin = args.number_per_redshift_bin#1000
+	number_per_redshift_bin = int(args.number_per_redshift_bin)#1000
 else:
 	number_per_redshift_bin = 1000
 	
