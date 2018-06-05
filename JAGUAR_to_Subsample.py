@@ -39,6 +39,16 @@ parser.add_argument(
 # Optional Arguments #
 ######################
 
+# Input ID Filename
+parser.add_argument(
+  '-iID','--inputIDs',
+  help="Input ID Filename",
+  action="store",
+  type=str,
+  dest="inputIDs",
+  required=False
+)
+
 # SF Output Filename
 parser.add_argument(
   '-sfo','--sfoutputfilename',
@@ -146,8 +156,19 @@ if (args.make_fits):
 else: 
 	make_fits_file = 0
 	
-if ((make_sf == 0) & (make_q == 0)):
-	sys.exit("No output SF or Q filename specified! Use -sfo or -q to provide a filename")
+#if ((make_sf == 0) & (make_q == 0)):
+#	sys.exit("No output SF or Q filename specified! Use -sfo or -q to provide a filename")
+
+if (args.inputIDs):
+	id_file = np.loadtxt(args.inputIDs, dtype = 'int')
+	input_ID_numbers = id_file[:]
+	n_input_ID_numbers = len(input_ID_numbers)
+	
+	id_filenameroot = 'ID_output_list'
+	use_IDs = 1
+	make_sf = 0
+	make_q = 0
+	make_combine = 0
 
 # Read in filters file
 
@@ -179,7 +200,7 @@ mass_range = np.arange(mass_minimum, mass_maximum+1.0, 1.0)
 n_mass_bins = len(mass_range)-1
 number_per_mass_bin = number_per_redshift_bin / (n_mass_bins)
 
-print number_per_mass_bin
+#print number_per_mass_bin
 
 # Full star-forming catalogue, fits file
 full_sf_mock_file = args.input_folder+'JADES_SF_mock_'+JAGUAR_version+'.fits'
@@ -198,7 +219,6 @@ sf_filt_flux = np.zeros([number_filters, n_sf_objects])
 for j in range(0, number_filters):
 	sf_filt_flux[:][j] = sftestfits[1].data[filters[j]+'_fnu']#*1e-23*1e-9
 
-
 # Full quiescent catalogue, fits file
 full_q_mock_file = args.input_folder+'JADES_Q_mock_'+JAGUAR_version+'.fits'
 qtestfits = fits.open(full_q_mock_file)
@@ -216,7 +236,6 @@ q_filt_flux = np.zeros([number_filters, n_q_objects])
 for j in range(0, number_filters):
 	q_filt_flux[:][j] = qtestfits[1].data[filters[j]+'_fnu']#*1e-23*1e-9
 
-
 # Open up the output files. 
 if (make_sf == 1):
 	sffile = open(sf_filenameroot+'.dat', 'w')
@@ -230,118 +249,151 @@ if (make_q == 1):
 	for j in range(0, number_filters):
 		qfile.write(filters[j]+'    ')
 	qfile.write(' \n')
+if (use_IDs == 1):
+	idfile = open(id_filenameroot+'.dat', 'w')
+	idfile.write('#ID    Redshift    Log(Mass)    Re_Maj    Sersic_n     ')
+	for j in range(0, number_filters):
+		idfile.write(filters[j]+'    ')
+	idfile.write(' \n')
+
 	
 # This is to be used if the randomized fluxes are requested
 sf_ID_value = 1
 q_ID_value = 1
 
-# Go through all of the redshift bins.
-for z in range(0, n_redshift_bins-1):
-	zbin_min = redshift_range[z]
-	zbin_max = redshift_range[z+1]
-	print "z = "+str(zbin_min)+" - "+str(zbin_max)
-	
-	# Find the indices for the objects in the redshift bin being examined.
-	z_indices_sf = np.where((full_sf_redshifts > zbin_min) & (full_sf_redshifts <= zbin_max))[0]
-	z_indices_q = np.where((full_q_redshifts > zbin_min) & (full_q_redshifts <= zbin_max))[0]
-
-	# Go through the masses. 
-	for m in range(0, n_mass_bins-1):
-		massbin_min = mass_range[m]
-		massbin_max = mass_range[m+1]
-		print "   log(Mass) = "+str(massbin_min)+" - "+str(massbin_max)
-		
-		# Find the indices for the objects in the mass bin being examined. 
-		mass_indices_sf = np.where((full_sf_logmass[z_indices_sf] > massbin_min) & (full_sf_logmass[z_indices_sf] <= massbin_max))[0]
-		full_sf_IDs_z_mass = full_sf_IDs[z_indices_sf][mass_indices_sf]
-		full_sf_redshifts_z_mass = full_sf_redshifts[z_indices_sf][mass_indices_sf]
-		full_sf_logmass_z_mass = full_sf_logmass[z_indices_sf][mass_indices_sf]
-		full_sf_re_maj_z_mass = full_sf_re_maj[z_indices_sf][mass_indices_sf]
-		full_sf_sersic_n_z_mass = full_sf_sersic_n[z_indices_sf][mass_indices_sf]
-
-		# Find the SF flux values for the objects in the mass and redshift bin being examined.
-		sf_filt_flux_z_mass = np.zeros([number_filters, len(full_sf_IDs_z_mass)])
-		for j in range(0, number_filters):
-			flux_1D_array = sf_filt_flux[:][j]
-			sf_filt_flux_z_mass[:][j] = flux_1D_array[z_indices_sf][mass_indices_sf]
-
-		# Now, choose some objects randomly from within the bin (providing there are enough objects)
-		if (len(full_sf_redshifts_z_mass) < number_per_mass_bin):
-			ri = random.sample(xrange(0,len(full_sf_redshifts_z_mass)), len(full_sf_redshifts_z_mass))
+if (use_IDs == 1):
+	for j in range(0, n_input_ID_numbers):
+		if (input_ID_numbers[j] <= np.max(full_sf_IDs)):
+			object_ID = input_ID_numbers[j]
+			object_index = np.where(full_sf_IDs == object_ID)[0][0]
+			object_redshifts = full_sf_redshifts[object_index]
+			object_logmass = full_sf_logmass[object_index]
+			object_re_maj = full_sf_re_maj[object_index]
+			object_sersic_n = full_sf_sersic_n[object_index]
+			object_fluxes = np.zeros(number_filters)
+			for j in range(0, number_filters):
+				object_fluxes[j] = sf_filt_flux[object_index][j]
 		else:
-			ri = random.sample(xrange(0,len(full_sf_redshifts_z_mass)), number_per_mass_bin)
+			object_ID = input_ID_numbers[j]
+			object_index = np.where(full_q_IDs == object_ID)[0][0]
+			object_redshifts = full_q_redshifts[object_index]
+			object_logmass = full_q_logmass[object_index]
+			object_re_maj = full_q_re_maj[object_index]
+			object_sersic_n = full_q_sersic_n[object_index]
+			for j in range(0, number_filters):
+				object_fluxes[j] = q_filt_flux[object_index][j]
 
-		# Now, go and find the ID, redshift, mass, etc, and write it to a file
-		if (make_sf == 1):
-			print "    SF ri = "+str(len(ri))
-			for x in range(0, len(ri)):
-				if (randomize_IDs == 0):
-					sf_ID_value = full_sf_IDs_z_mass[ri[x]]
-				sffile.write(str(sf_ID_value)+' '+str(full_sf_redshifts_z_mass[ri[x]])+' '+str(full_sf_logmass_z_mass[ri[x]])
-					+' '+str(full_sf_re_maj_z_mass[ri[x]])+' '+str(full_sf_sersic_n_z_mass[ri[x]])+' ')
-				for j in range(0, number_filters):
-					flux_1D_array = sf_filt_flux_z_mass[:][j]
-					sffile.write(str(flux_1D_array[ri[x]])+' ')
-				sffile.write(' \n')
-				if (randomize_IDs == 1):
-					sf_ID_value = sf_ID_value + 1
+		idfile.write(str(object_ID)+' '+str(object_redshifts)+' '+str(object_logmass)
+					+' '+str(object_re_maj)+' '+str(object_sersic_n)+' ')
+		for j in range(0, number_filters):
+			idfile.write(str(object_fluxes[j])+' ')
+		idfile.write(' \n')
+		
+	idfile.close()
+
+else:
+	# Go through all of the redshift bins.
+	for z in range(0, n_redshift_bins-1):
+		zbin_min = redshift_range[z]
+		zbin_max = redshift_range[z+1]
+		print "z = "+str(zbin_min)+" - "+str(zbin_max)
+		
+		# Find the indices for the objects in the redshift bin being examined.
+		z_indices_sf = np.where((full_sf_redshifts > zbin_min) & (full_sf_redshifts <= zbin_max))[0]
+		z_indices_q = np.where((full_q_redshifts > zbin_min) & (full_q_redshifts <= zbin_max))[0]
+	
+		# Go through the masses. 
+		for m in range(0, n_mass_bins-1):
+			massbin_min = mass_range[m]
+			massbin_max = mass_range[m+1]
+			print "   log(Mass) = "+str(massbin_min)+" - "+str(massbin_max)
 			
-		# Find the indices for the objects in the mass bin being examined. 
-		mass_indices_q = np.where((full_q_logmass[z_indices_q] > massbin_min) & (full_q_logmass[z_indices_q] <= massbin_max))[0]
-		full_q_IDs_z_mass = full_q_IDs[z_indices_q][mass_indices_q]
-		full_q_redshifts_z_mass = full_q_redshifts[z_indices_q][mass_indices_q]
-		full_q_logmass_z_mass = full_q_logmass[z_indices_q][mass_indices_q]
-		full_q_re_maj_z_mass = full_q_re_maj[z_indices_q][mass_indices_q]
-		full_q_sersic_n_z_mass = full_q_sersic_n[z_indices_q][mass_indices_q]
-
-		# Find the Q flux values for the objects in the mass and redshift bin being examined.
-		q_filt_flux_z_mass = np.zeros([number_filters, len(full_q_IDs_z_mass)])
-		for j in range(0, number_filters):
-			flux_1D_array = q_filt_flux[:][j]
-			q_filt_flux_z_mass[:][j] = flux_1D_array[z_indices_q][mass_indices_q]
-		
-		# Now, choose some objects randomly from within the bin (providing there are enough objects)
-		if (len(full_q_redshifts_z_mass) < number_per_mass_bin):
-			ri = random.sample(xrange(0,len(full_q_redshifts_z_mass)), len(full_q_redshifts_z_mass))
-				
-		else:
-			ri = random.sample(xrange(0,len(full_q_redshifts_z_mass)), number_per_mass_bin)
-
-		# Now, go and find the ID, redshift, mass, etc, and write it to a file
-		if (make_q == 1):
-			print "    Q ri = "+str(len(ri))
-			for x in range(0, len(ri)):
-				if (randomize_IDs == 0):
-					q_ID_value = full_q_IDs_z_mass[ri[x]]
-				qfile.write(str(q_ID_value)+' '+str(full_q_redshifts_z_mass[ri[x]])+' '+str(full_q_logmass_z_mass[ri[x]])
-					+' '+str(full_q_re_maj_z_mass[ri[x]])+' '+str(full_q_sersic_n_z_mass[ri[x]])+' ')
-				for j in range(0, number_filters):
-					flux_1D_array = q_filt_flux_z_mass[:][j]
-					qfile.write(str(flux_1D_array[ri[x]])+' ')
-				qfile.write(' \n')
-				if (randomize_IDs == 1):
-					q_ID_value = q_ID_value + 1
-		
-if (make_sf == 1):
-	sffile.close()
-	os.system('sort -bn -k1 '+sf_filenameroot+'.dat > '+sf_filenameroot+'.sorted.dat')
-	os.system('rm '+sf_filenameroot+'.dat')
-	os.system('mv '+sf_filenameroot+'.sorted.dat '+sf_filenameroot+'.dat')
-if (make_q == 1):
-	qfile.close()
-	os.system('sort -bn -k1 '+q_filenameroot+'.dat > '+q_filenameroot+'.sorted.dat')
-	os.system('rm '+q_filenameroot+'.dat')
-	os.system('mv '+q_filenameroot+'.sorted.dat '+q_filenameroot+'.dat')
-
-
-#os.system("some_command with args")
-
-if (args.combine_filename):
-	os.system("sed '1d' "+q_filenameroot+".dat > tmp.dat")
-	os.system('cat '+sf_filenameroot+'.dat tmp.dat > '+c_filenameroot+'.dat')
-	os.system('rm tmp.dat')
+			# Find the indices for the objects in the mass bin being examined. 
+			mass_indices_sf = np.where((full_sf_logmass[z_indices_sf] > massbin_min) & (full_sf_logmass[z_indices_sf] <= massbin_max))[0]
+			full_sf_IDs_z_mass = full_sf_IDs[z_indices_sf][mass_indices_sf]
+			full_sf_redshifts_z_mass = full_sf_redshifts[z_indices_sf][mass_indices_sf]
+			full_sf_logmass_z_mass = full_sf_logmass[z_indices_sf][mass_indices_sf]
+			full_sf_re_maj_z_mass = full_sf_re_maj[z_indices_sf][mass_indices_sf]
+			full_sf_sersic_n_z_mass = full_sf_sersic_n[z_indices_sf][mass_indices_sf]
 	
-
+			# Find the SF flux values for the objects in the mass and redshift bin being examined.
+			sf_filt_flux_z_mass = np.zeros([number_filters, len(full_sf_IDs_z_mass)])
+			for j in range(0, number_filters):
+				flux_1D_array = sf_filt_flux[:][j]
+				sf_filt_flux_z_mass[:][j] = flux_1D_array[z_indices_sf][mass_indices_sf]
+	
+			# Now, choose some objects randomly from within the bin (providing there are enough objects)
+			if (len(full_sf_redshifts_z_mass) < number_per_mass_bin):
+				ri = random.sample(xrange(0,len(full_sf_redshifts_z_mass)), len(full_sf_redshifts_z_mass))
+			else:
+				ri = random.sample(xrange(0,len(full_sf_redshifts_z_mass)), number_per_mass_bin)
+	
+			# Now, go and find the ID, redshift, mass, etc, and write it to a file
+			if (make_sf == 1):
+				print "    SF ri = "+str(len(ri))
+				for x in range(0, len(ri)):
+					if (randomize_IDs == 0):
+						sf_ID_value = full_sf_IDs_z_mass[ri[x]]
+					sffile.write(str(sf_ID_value)+' '+str(full_sf_redshifts_z_mass[ri[x]])+' '+str(full_sf_logmass_z_mass[ri[x]])
+						+' '+str(full_sf_re_maj_z_mass[ri[x]])+' '+str(full_sf_sersic_n_z_mass[ri[x]])+' ')
+					for j in range(0, number_filters):
+						flux_1D_array = sf_filt_flux_z_mass[:][j]
+						sffile.write(str(flux_1D_array[ri[x]])+' ')
+					sffile.write(' \n')
+					if (randomize_IDs == 1):
+						sf_ID_value = sf_ID_value + 1
+				
+			# Find the indices for the objects in the mass bin being examined. 
+			mass_indices_q = np.where((full_q_logmass[z_indices_q] > massbin_min) & (full_q_logmass[z_indices_q] <= massbin_max))[0]
+			full_q_IDs_z_mass = full_q_IDs[z_indices_q][mass_indices_q]
+			full_q_redshifts_z_mass = full_q_redshifts[z_indices_q][mass_indices_q]
+			full_q_logmass_z_mass = full_q_logmass[z_indices_q][mass_indices_q]
+			full_q_re_maj_z_mass = full_q_re_maj[z_indices_q][mass_indices_q]
+			full_q_sersic_n_z_mass = full_q_sersic_n[z_indices_q][mass_indices_q]
+	
+			# Find the Q flux values for the objects in the mass and redshift bin being examined.
+			q_filt_flux_z_mass = np.zeros([number_filters, len(full_q_IDs_z_mass)])
+			for j in range(0, number_filters):
+				flux_1D_array = q_filt_flux[:][j]
+				q_filt_flux_z_mass[:][j] = flux_1D_array[z_indices_q][mass_indices_q]
+			
+			# Now, choose some objects randomly from within the bin (providing there are enough objects)
+			if (len(full_q_redshifts_z_mass) < number_per_mass_bin):
+				ri = random.sample(xrange(0,len(full_q_redshifts_z_mass)), len(full_q_redshifts_z_mass))
+					
+			else:
+				ri = random.sample(xrange(0,len(full_q_redshifts_z_mass)), number_per_mass_bin)
+	
+			# Now, go and find the ID, redshift, mass, etc, and write it to a file
+			if (make_q == 1):
+				print "    Q ri = "+str(len(ri))
+				for x in range(0, len(ri)):
+					if (randomize_IDs == 0):
+						q_ID_value = full_q_IDs_z_mass[ri[x]]
+					qfile.write(str(q_ID_value)+' '+str(full_q_redshifts_z_mass[ri[x]])+' '+str(full_q_logmass_z_mass[ri[x]])
+						+' '+str(full_q_re_maj_z_mass[ri[x]])+' '+str(full_q_sersic_n_z_mass[ri[x]])+' ')
+					for j in range(0, number_filters):
+						flux_1D_array = q_filt_flux_z_mass[:][j]
+						qfile.write(str(flux_1D_array[ri[x]])+' ')
+					qfile.write(' \n')
+					if (randomize_IDs == 1):
+						q_ID_value = q_ID_value + 1
+			
+	if (make_sf == 1):
+		sffile.close()
+		os.system('sort -bn -k1 '+sf_filenameroot+'.dat > '+sf_filenameroot+'.sorted.dat')
+		os.system('rm '+sf_filenameroot+'.dat')
+		os.system('mv '+sf_filenameroot+'.sorted.dat '+sf_filenameroot+'.dat')
+	if (make_q == 1):
+		qfile.close()
+		os.system('sort -bn -k1 '+q_filenameroot+'.dat > '+q_filenameroot+'.sorted.dat')
+		os.system('rm '+q_filenameroot+'.dat')
+		os.system('mv '+q_filenameroot+'.sorted.dat '+q_filenameroot+'.dat')
+	if (args.combine_filename):
+		os.system("sed '1d' "+q_filenameroot+".dat > tmp.dat")
+		os.system('cat '+sf_filenameroot+'.dat tmp.dat > '+c_filenameroot+'.dat')
+		os.system('rm tmp.dat')
+	
 if (args.make_fits):
 	# First, let's make the  dtype and colnames arrays
 	colnames = np.zeros(5+number_filters, dtype ='S20')
@@ -445,4 +497,32 @@ if (args.make_fits):
 		# And finally, let's write out the output file.
 		outtab = Table(output_data, names=colnames, dtype=dtype)
 		outtab.write(c_filenameroot+'.fits')
+
+	if (use_IDs == 1):
+		catalogue_file = id_filenameroot+'.dat'
+		cat_file_full = np.loadtxt(catalogue_file)
+		ID_numbers = cat_file_full[:,0]
+		redshifts = cat_file_full[:,1]
+		logmasses = cat_file_full[:,2]
+		re_major = cat_file_full[:,3]
+		sersic_n = cat_file_full[:,4]
+		n_objects = ID_numbers.size
+	
+		apparent_flux = np.zeros([number_filters, n_objects])
+		for j in range(0, number_filters):
+			apparent_flux[:][j] = cat_file_full[:,5+j]
+		
+		# And now let's assemble the data array
+		output_data = np.zeros([n_objects, 5+number_filters])
+		output_data[:,0] = ID_numbers
+		output_data[:,1] = redshifts
+		output_data[:,2] = logmasses
+		output_data[:,3] = re_major
+		output_data[:,4] = sersic_n
+		for j in range(0, number_filters):
+			output_data[:,j+5] = apparent_flux[:][j]
+		
+		# And finally, let's write out the output file.
+		outtab = Table(output_data, names=colnames, dtype=dtype)
+		outtab.write(id_filenameroot+'.fits')
 

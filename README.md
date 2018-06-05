@@ -8,15 +8,18 @@ equally sample redshift and mass space (instead of being weighted towards
 low redshift, low mass objects). It's run with a variety of flags.
 		
 ```
-usage: JAGUAR_to_Subsample.py [-h] -in INPUT_FOLDER [-sfo SF_OUTPUT_FILENAME]
-                       [-qo Q_OUTPUT_FILENAME] [-rid RANDOMIZE_IDS]
-                       [-nz NUMBER_PER_REDSHIFT_BIN] [-fi FILTERS_FILE]
-                       [-mf]
+usage: JAGUAR_to_Subsample.py [-h] -in INPUT_FOLDER [-iID INPUTIDS]
+                              [-sfo SF_OUTPUT_FILENAME]
+                              [-qo Q_OUTPUT_FILENAME] [-rid RANDOMIZE_IDS]
+                              [-nz NUMBER_PER_REDSHIFT_BIN] [-fi FILTERS_FILE]
+                              [-co COMBINE_FILENAME] [-mf]
 
 optional arguments:
   -h, --help            show this help message and exit
   -in INPUT_FOLDER, --inputfolder INPUT_FOLDER
                         Input Folder With Mock Catalog Files
+  -iID INPUTIDS, --inputIDs INPUTIDS
+                        Input ID Filename
   -sfo SF_OUTPUT_FILENAME, --sfoutputfilename SF_OUTPUT_FILENAME
                         SF Output Filename
   -qo Q_OUTPUT_FILENAME, --qoutputfilename Q_OUTPUT_FILENAME
@@ -30,6 +33,7 @@ optional arguments:
   -co COMBINE_FILENAME, --coutputfilename COMBINE_FILENAME
                         Filename for combined file?
   -mf, --make_fits      Make Fits File?
+
 ```
 
 Here is an example of the input:
@@ -43,15 +47,22 @@ file should be created. A filters file is specified, which is one
 column including the filters that are desired. Finally, the make fits flag is
 set, so two fits files will also be created. 
 
+It is also possible to supply a list of IDs to create a subsample, using the 
+`-iIDs` flag:
+
+`% python JAGUAR_to_Subsample.py -in /Path/To/Your/Mock_Catalog_Files/ -rid 0 -iID your_list_of_IDs.dat -fi filters.dat -mf`
+
+This will produce the file `ID_output_list.dat` (and a fits version if the `-mf` flag is
+set).
+
 ### `Subsample_to_NoisySubsample.py`
 This script takes in the output files from `JAGUAR_to_Subsample.py` and then
 adds noise to the fluxes, producing noisy fluxes and uncertainties depending
 on the HST and/or NIRCam depths you specify. Because these depths are driven
 by the CANDELs survey (Grogin et al) and the JADES survey, only those filters
-will be produced. Currently, the HST noise addition is very simple, while the
-NIRCam addition will take into account the size, estimating an aperture
-correction. 
-		
+will be produced. Currently, the HST and NIRCam uncertainties are derived
+based on calculating the flux and errors through an aperture based on the size and 
+sersic index, and stacking individual images.
 ```
 usage: Subsample_to_NoisySubsample.py [-h] -in INPUT_FILE -out OUTPUT_FILE
 		                                      -hst HST_DEPTH -ni NIRCAM_DEPTH -fi
@@ -141,9 +152,8 @@ NRC_F444W F444W F444W_NRConly_ModAB_mean_resampled.res NIRCam_F444W.res
 This script takes in the output files from EAZY, BPZ, and Le Phare (at the moment) and
 calculates statistics and produces plots that show the photometric redshifts compared to the 
 spectroscopic redshifts as a function of both SNR, and a second parameter from the JAGUAR 
-catalog, if you specify.
-
-
+catalog, if you specify. For EAZY and BPZ, the `z_prob` and `ODDS` parameters are used as
+an additional filter.
 ```
 usage: ComparePhotoZ_to_SpecZ.py [-h] -input INPUT_PHOTOMETRY -nrcf
                                  NIRCAM_FILTER -snrl SNR_LIMIT
@@ -182,7 +192,6 @@ optional arguments:
                         Path to JAGUAR Catalogs?
   -jparam JAGUAR_PARAM, --jaguar_param JAGUAR_PARAM
                         JAGUAR Parameter for Coloring Plots?
-
 ```
 
 `% python ComparePhotoZ_to_SpecZ.py -input /Path/To/Input/Noisy/Photometry/all_fluxes_5_1_18_noisy.dat -nrcf NRC_F200W -snrl 5 -eazy /Path/To/EAZY/output/photz.zout -jaguar /Path/To/Your/Mock_Catalog_Files/ -jparam sSFR -mp -outliers  -outf /Path/To/Optional/Output/Folder/`
@@ -199,19 +208,25 @@ optional output folder for putting all of the files.
 The statistics that are produced are:
 
 ```
-------------------
+------------------------------------
 ALL OBJECTS
- bias = 0.121 +/- 1.643
- sigma_68 = 0.066
- NMAD = 0.038
- fraction (> 0.15) = 0.191
-------------------
-NRC_F200W_SNR > 5
- bias = 0.035 +/- 0.183
- sigma_68 = 0.034
- NMAD = 0.025
- fraction (> 0.15) = 0.067
-------------------
+ bias = 0.033 +/- 1.012
+ sigma_68 = 0.046
+ NMAD = 0.031
+ fraction (> 0.15) = 0.166
+------------------------------------
+NRC_F200W_SNR > 5.0
+ bias = 0.002 +/- 0.167
+ sigma_68 = 0.024
+ NMAD = 0.021
+ fraction (> 0.15) = 0.038
+------------------------------------
+NRC_F200W_SNR > 5.0, HIGH PROBABILITY
+ bias = 0.005 +/- 0.085
+ sigma_68 = 0.023
+ NMAD = 0.020
+ fraction (> 0.15) = 0.025
+------------------------------------
 ```
 
 The first is the bias, which is the average and standard deviation of 
