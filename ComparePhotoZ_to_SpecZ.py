@@ -292,7 +292,12 @@ if ((path_to_jaguar_cat_given == 1) and (jaguar_param_given == 1)):
 	
 	# Get redshifts and galaxy properties
 	catalog_q_IDs = qtestfits[1].data['ID']
-	catalog_q_param = qtestfits[1].data[args.jaguar_param]
+	if ((args.jaguar_param == 'beta') or (args.jaguar_param == 'SFR_10') or (args.jaguar_param == 'SFR_100') or (args.jaguar_param == 'tauV_eff') or (args.jaguar_param == 'A1500')):
+		# I need to replace this with something better than just zeroing these
+		# values.
+		catalog_q_param = qtestfits[1].data['ID']*0
+	else:
+		catalog_q_param = qtestfits[1].data[args.jaguar_param]
 	n_q_objects = len(catalog_q_IDs)
 	
 	catalog_all_IDs = np.append(catalog_sf_IDs, catalog_q_IDs)
@@ -317,6 +322,8 @@ if (args.eazy_output_file):
 	ids = output_zs[:,0]
 	z_spec = output_zs[:,1]
 	z_phot = output_zs[:,13]
+	prob_limit = 0.9
+	z_prob = output_zs[:,14]
 
 	title_for_plot = 'EAZY Results'
 	
@@ -345,6 +352,8 @@ if (args.bpz_output_file):
 	ids = output_zs[:,0]
 	z_spec = redshifts
 	z_phot = output_zs[:,1]
+	prob_limit = 0.95
+	z_prob = output_zs[:,5]
 	#z_phot = output_zs[:,8]
 
 	title_for_plot = 'BPZ Results'
@@ -352,6 +361,7 @@ if (args.bpz_output_file):
 IDs_highSNR = np.zeros(n_highSNR_objects)
 zspec_highSNR = np.zeros(n_highSNR_objects)
 zphot_highSNR = np.zeros(n_highSNR_objects)
+zprob_highSNR = np.zeros(n_highSNR_objects)
 NIRc_mag_highSNR = np.zeros(n_highSNR_objects)
 logNIRc_highSNR = np.zeros(n_highSNR_objects)
 if ((path_to_jaguar_cat_given == 1) and (jaguar_param_given == 1)):
@@ -362,6 +372,7 @@ for x in range(0, n_objects):
 	if (NIRc_SNR[x] >= SNR_limit):
 		zspec_highSNR[x_highSNR_objects] = z_spec[x]
 		zphot_highSNR[x_highSNR_objects] = z_phot[x]
+		zprob_highSNR[x_highSNR_objects] = z_prob[x]
 		NIRc_mag_highSNR[x_highSNR_objects] = NIRc_mag[x]
 		IDs_highSNR[x_highSNR_objects] = ID_values[x]
 		
@@ -373,10 +384,13 @@ for x in range(0, n_objects):
 
 b = np.arange(0,max_redshift+1)
 
+high_probs_indices = np.where(z_prob > prob_limit)
+high_probs_highSNR_indices = np.where(zprob_highSNR > prob_limit)
+
 # # # # # # # # # # # # #
 #  Calculate Statisics  #
 # # # # # # # # # # # # #
-print "------------------"
+print "------------------------------------"
 # ALL OBJECTS
 residuals = (z_spec - z_phot) / (1 + z_spec)
 
@@ -393,7 +407,7 @@ print " sigma_68 = %.3f" % (residual_68_value)
 print " NMAD = %.3f" % (NMAD)
 print " fraction (> 0.15) = %.3f" % (fraction_gt_15)
 #print " skewness = %.3f" % (skewness)
-print "------------------"
+print "------------------------------------"
 # HIGH SNR OBJECTS
 
 residuals_SNR_5 = (zspec_highSNR - zphot_highSNR) / (1 + zspec_highSNR)
@@ -411,7 +425,25 @@ print " sigma_68 = %.3f" % (residual_68_value_SNR_5)
 print " NMAD = %.3f" % (NMAD_SNR_5)
 print " fraction (> 0.15) = %.3f" % (fraction_gt_15_SNR_5)
 #print " skewness = %.3f" % (skewness)
-print "------------------"
+print "------------------------------------"
+# HIGH SNR OBJECTS, HIGH PROB
+
+residuals_SNR_5_highprob = (zspec_highSNR[high_probs_highSNR_indices] - zphot_highSNR[high_probs_highSNR_indices]) / (1 + zspec_highSNR[high_probs_highSNR_indices])
+
+residual_mean_SNR_5_highprob = np.mean(residuals_SNR_5_highprob)
+residual_std_SNR_5_highprob = np.std(residuals_SNR_5_highprob)
+residual_68_value_SNR_5_highprob = residuals_68(residuals_SNR_5_highprob)
+NMAD_SNR_5_highprob = 1.48 * astropy.stats.median_absolute_deviation(residuals_SNR_5_highprob)
+fraction_gt_15_SNR_5_highprob = len(np.where(abs(residuals_SNR_5_highprob) > 0.15)[0])*1.0/len(abs(residuals_SNR_5_highprob))*1.0
+#skewness_SNR_5 = scipy.stats.skew(residuals_SNR_5)
+
+print ""+args.nircam_filter+"_SNR > "+str(args.snr_limit)+", HIGH PROBABILITY"
+print " bias = %.3f +/- %.3f" % (residual_mean_SNR_5_highprob, residual_std_SNR_5_highprob)
+print " sigma_68 = %.3f" % (residual_68_value_SNR_5_highprob)
+print " NMAD = %.3f" % (NMAD_SNR_5_highprob)
+print " fraction (> 0.15) = %.3f" % (fraction_gt_15_SNR_5_highprob)
+#print " skewness = %.3f" % (skewness)
+print "------------------------------------"
 
 
 # # # # # # # # # # # # # #
@@ -424,87 +456,118 @@ if (args.outliers):
 	n_catastrophic_outliers = len(catastrophic_outlier_IDs)
 	catastrophic_outlier_IDs_highSNR, catastrophic_outlier_z_spec_highSNR, catastrophic_outlier_z_phot_highSNR = find_catastrophic_outliers(IDs_highSNR, zspec_highSNR, zphot_highSNR, outlier_faction_value)
 	n_catastrophic_outliers_highSNR = len(catastrophic_outlier_IDs_highSNR)
+	catastrophic_outlier_IDs_highSNR_highprob, catastrophic_outlier_z_spec_highSNR_highprob, catastrophic_outlier_z_phot_highSNR_highprob = find_catastrophic_outliers(IDs_highSNR[high_probs_highSNR_indices], zspec_highSNR[high_probs_highSNR_indices], zphot_highSNR[high_probs_highSNR_indices], outlier_faction_value)
+	n_catastrophic_outliers_highSNR_highprob = len(catastrophic_outlier_IDs_highSNR_highprob)
 	
 	catastrophic_folder = 'catastrophic_outliers/'
 	if not os.path.exists(output_folder+catastrophic_folder):
 	    os.makedirs(output_folder+catastrophic_folder)
 
+	# Files with spec_z's and photo_z's
+	q = open(output_folder+catastrophic_folder+version+'_catastrophic_outliers_speczvsphotz.dat', 'a')
+	r = open(output_folder+catastrophic_folder+version+'_catastrophic_outliers_speczvsphotz_SNR_gt_'+str(args.snr_limit)+'.dat', 'a')
+	s = open(output_folder+catastrophic_folder+version+'_catastrophic_outliers_speczvsphotz_SNR_gt_'+str(args.snr_limit)+'_highprob.dat', 'a')
+	q.write('#ID  z_spec  z_phot \n')
+	r.write('#ID  z_spec  z_phot \n')
+	s.write('#ID  z_spec  z_phot \n')
+
+	# Files with the individual objects
 	f = open(output_folder+catastrophic_folder+version+'_catastrophic_outliers.dat', 'a')
 	g = open(output_folder+catastrophic_folder+version+'_catastrophic_outliers_SNR_gt_'+str(args.snr_limit)+'.dat', 'a')
+	h = open(output_folder+catastrophic_folder+version+'_catastrophic_outliers_SNR_gt_'+str(args.snr_limit)+'_highprob.dat', 'a')
 
 	# Now I need to output these IDs to a noisy input file, for creating Photo-Z Input Models. 
 	if (args.input_photometry.endswith('.fits')):
-				
+		
+		# All of the outliers		
 		for x in range(0, n_catastrophic_outliers):
 			ID_index_cat = np.where(ID_values == catastrophic_outlier_IDs[x])[0][0]
 			ID_value_cat = ID_values[ID_index_cat]
 			redshift_cat = redshifts[ID_index_cat]
+			photo_z_value = redshifts[ID_index_cat]
+			q.write(str(catastrophic_outlier_IDs[x])+' '+str(catastrophic_outlier_z_spec[x])+'  '+str(catastrophic_outlier_z_phot[x]))
 			f.write(str(ID_value_cat)+' '+str(redshift_cat)+'  ')
 			for y in range(0, number_jades_filters):
 				flux_value_cat = fitsinput[1].data[noisy_jades_filters[y]][ID_index_cat]
 				flux_value_err_cat = fitsinput[1].data[noisy_jades_filters[y]+'_err'][ID_index_cat]
-#			for y in range(0, number_filters):
-#				flux_value_cat = fitsinput[1].data[header_filters[y]][ID_index_cat]
-#				flux_value_err_cat = fitsinput[1].data[header_filters[y]+'_err'][ID_index_cat]
 				f.write(str(flux_value_cat)+' '+str(flux_value_err_cat)+'  ')
+			q.write('\n')
 			f.write('\n')
 		
+		# The High S/N outliers
 		for x in range(0, n_catastrophic_outliers_highSNR):
 			ID_index_cat_highSNR = np.where(ID_values == catastrophic_outlier_IDs_highSNR[x])[0][0]
 			ID_value_cat_highSNR = ID_values[ID_index_cat_highSNR]
 			redshift_cat_highSNR = redshifts[ID_index_cat_highSNR]
+			r.write(str(catastrophic_outlier_IDs_highSNR[x])+' '+str(catastrophic_outlier_z_spec_highSNR[x])+'  '+str(catastrophic_outlier_z_phot_highSNR[x]))
 			g.write(str(ID_value_cat_highSNR)+' '+str(redshift_cat_highSNR)+'  ')
 			for y in range(0, number_jades_filters):
 				flux_value_cat_highSNR = fitsinput[1].data[noisy_jades_filters[y]][ID_index_cat_highSNR]
 				flux_value_err_cat_highSNR = fitsinput[1].data[noisy_jades_filters[y]+'_err'][ID_index_cat_highSNR]
-#			for y in range(0, number_filters):
-#				flux_value_cat_highSNR = fitsinput[1].data[header_filters[y]][ID_index_cat_highSNR]
-#				flux_value_err_cat_highSNR = fitsinput[1].data[header_filters[y]+'_err'][ID_index_cat_highSNR]
 				g.write(str(flux_value_cat_highSNR)+' '+str(flux_value_err_cat_highSNR)+'  ')
+			r.write('\n')
 			g.write('\n')
-	
+
+		# The High S/N, high probability outliers
+		for x in range(0, n_catastrophic_outliers_highSNR_highprob):
+			ID_index_cat_highSNR_highprob = np.where(ID_values == catastrophic_outlier_IDs_highSNR_highprob[x])[0][0]
+			ID_value_cat_highSNR_highprob = ID_values[ID_index_cat_highSNR_highprob]
+			redshift_cat_highSNR_highprob = redshifts[ID_index_cat_highSNR_highprob]
+			s.write(str(catastrophic_outlier_IDs_highSNR_highprob[x])+' '+str(catastrophic_outlier_z_spec_highSNR_highprob[x])+'  '+str(catastrophic_outlier_z_phot_highSNR_highprob[x]))
+			h.write(str(ID_value_cat_highSNR_highprob)+' '+str(redshift_cat_highSNR_highprob)+'  ')
+			for y in range(0, number_jades_filters):
+				flux_value_cat_highSNR_highprob = fitsinput[1].data[noisy_jades_filters[y]][ID_index_cat_highSNR_highprob]
+				flux_value_err_cat_highSNR_highprob = fitsinput[1].data[noisy_jades_filters[y]+'_err'][ID_index_cat_highSNR_highprob]
+				h.write(str(flux_value_cat_highSNR_highprob)+' '+str(flux_value_err_cat_highSNR_highprob)+'  ')
+			s.write('\n')
+			h.write('\n')
+
 	else:
 
+		# All of the outliers		
 		for x in range(0, n_catastrophic_outliers):
 			ID_index_cat = np.where(ID_values == catastrophic_outlier_IDs[x])[0][0]
 			ID_value_cat = ID_values[ID_index_cat]
 			redshift_cat = redshifts[ID_index_cat]
+			q.write(str(catastrophic_outlier_IDs[x])+' '+str(catastrophic_outlier_z_spec[x])+'  '+str(catastrophic_outlier_z_phot[x]))
 			f.write(str(ID_value_cat)+' '+str(redshift_cat)+'  ')
 			for y in range(0, number_jades_filters):
 				flux_value_cat = full_input_file[ID_index_cat,(y+1)*2]
 				flux_value_err_cat = full_input_file[ID_index_cat,((y+1)*2)+1]
-#			for y in range(0, number_filters):
-#				for k in range(0, number_jades_filters):
-#					if (header_filters[y] == noisy_jades_filters[k]):
-#						flux_value_cat = full_input_file[ID_index_cat,(k+1)*2]
-#						flux_value_err_cat = full_input_file[ID_index_cat,((k+1)*2)+1]
 				f.write(str(flux_value_cat)+' '+str(flux_value_err_cat)+'  ')
+			q.write('\n')
 			f.write('\n')
 			
+		# The High S/N outliers
 		for x in range(0, n_catastrophic_outliers_highSNR):
 			ID_index_cat_highSNR = np.where(ID_values == catastrophic_outlier_IDs_highSNR[x])[0][0]
 			ID_value_cat_highSNR = ID_values[ID_index_cat_highSNR]
 			redshift_cat_highSNR = redshifts[ID_index_cat_highSNR]
+			r.write(str(catastrophic_outlier_IDs_highSNR[x])+' '+str(catastrophic_outlier_z_spec_highSNR[x])+'  '+str(catastrophic_outlier_z_phot_highSNR[x]))
 			g.write(str(ID_value_cat_highSNR)+' '+str(redshift_cat_highSNR)+'  ')
 			for y in range(0, number_jades_filters):
 				flux_value_cat_highSNR = full_input_file[ID_index_cat_highSNR,(y+1)*2]
 				flux_value_err_cat_highSNR = full_input_file[ID_index_cat_highSNR,((y+1)*2)+1]
-#			for y in range(0, number_filters):
-#				for k in range(0, number_jades_filters):
-#					if (header_filters[y] == noisy_jades_filters[k]):
-#						flux_value_cat_highSNR = full_input_file[ID_index_cat_highSNR,(k+1)*2]
-#						flux_value_err_cat_highSNR = full_input_file[ID_index_cat_highSNR,((k+1)*2)+1]
 				g.write(str(flux_value_cat_highSNR)+' '+str(flux_value_err_cat_highSNR)+'  ')
+			r.write('\n')
 			g.write('\n')
-			
-		#full_input_file = np.loadtxt(args.input_photometry)
-		
-		#ID_values = full_input_file[:,0]
-		#redshifts = full_input_file[:,1]
-		#NIRc_flux = full_input_file[:,(filter_index+1)*2]
-		#NIRc_err = full_input_file[:,((filter_index+1)*2)+1]
-		#number_objects = len(ID_values)
 
+		# The High S/N, high probability outliers
+		for x in range(0, n_catastrophic_outliers_highSNR):
+			ID_index_cat_highSNR_highprob = np.where(ID_values == catastrophic_outlier_IDs_highSNR_highprob[x])[0][0]
+			ID_value_cat_highSNR_highprob = ID_values[ID_index_cat_highSNR_highprob]
+			redshift_cat_highSNR_highprob = redshifts[ID_index_cat_highSNR_highprob]
+			s.write(str(catastrophic_outlier_IDs_highSNR_highprob[x])+' '+str(catastrophic_outlier_z_spec_highSNR_highprob[x])+'  '+str(catastrophic_outlier_z_phot_highSNR_highprob[x]))
+			h.write(str(ID_value_cat_highSNR_highprob)+' '+str(redshift_cat_highSNR_highprob)+'  ')
+			for y in range(0, number_jades_filters):
+				flux_value_cat_highSNR_highprob = full_input_file[ID_index_cat_highSNR_highprob,(y+1)*2]
+				flux_value_err_cat_highSNR_highprob = full_input_file[ID_index_cat_highSNR_highprob,((y+1)*2)+1]
+				g.write(str(flux_value_cat_highSNR_highprob)+' '+str(flux_value_err_cat_highSNR_highprob)+'  ')
+			s.write('\n')
+			h.write('\n')
+		
+	q.close()
+	r.close()
 	f.close()
 	g.close()
 	
@@ -512,6 +575,8 @@ if (args.outliers):
 	catastrophic_outlier_plots(z_spec, z_phot, catastrophic_outlier_z_spec, catastrophic_outlier_z_phot, name, title_for_plot, min_redshift, max_redshift)
 	name = output_folder+catastrophic_folder+'/catastrophic_outlier_zspec_vs_zphot_highSNR.png'
 	catastrophic_outlier_plots(zspec_highSNR, zphot_highSNR, catastrophic_outlier_z_spec_highSNR, catastrophic_outlier_z_phot_highSNR, name, title_for_plot, min_redshift, max_redshift)
+	name = output_folder+catastrophic_folder+'/catastrophic_outlier_zspec_vs_zphot_highSNR_highprob.png'
+	catastrophic_outlier_plots(zspec_highSNR[high_probs_highSNR_indices], zphot_highSNR[high_probs_highSNR_indices], catastrophic_outlier_z_spec_highSNR_highprob, catastrophic_outlier_z_phot_highSNR_highprob, name, title_for_plot, min_redshift, max_redshift)
 
 # # # # # # # # #
 #  Make  Plots  #
@@ -555,6 +620,8 @@ if (args.make_plots):
 	photz_specz_offset(z_spec, z_phot, logNIRc_SNR, name, args.nircam_filter, title_for_plot, min_redshift, max_redshift, colorlabel)
 	name = output_folder+'/z_phot_vs_z_spec_SNR_'+str(SNR_limit)+'.png'
 	photz_specz_offset(zspec_highSNR, zphot_highSNR, logNIRc_highSNR, name, args.nircam_filter, title_for_plot, min_redshift, max_redshift, colorlabel)
+	name = output_folder+'/z_phot_vs_z_spec_SNR_'+str(SNR_limit)+'_highprob.png'
+	photz_specz_offset(zspec_highSNR[high_probs_highSNR_indices], zphot_highSNR[high_probs_highSNR_indices], logNIRc_highSNR[high_probs_highSNR_indices], name, args.nircam_filter, title_for_plot, min_redshift, max_redshift, colorlabel)
 	
 	# Plot photo-z vs. spec-z and delta_z vs. spec-z, colored by a JAGUAR parameter
 	if ((path_to_jaguar_cat_given == 1) and (jaguar_param_given == 1)):
@@ -583,6 +650,11 @@ if (args.make_plots):
 	# Plot the Outlier Fraction as a function of redshift for the high SNR objects
 	name = output_folder+'/outlier_fraction_z_SNR_'+str(SNR_limit)+'.png'
 	outlier_fraction_vs_redshift(zspec_highSNR, zphot_highSNR, name, title_for_plot)
+
+	# Plot the Outlier Fraction as a function of redshift for the high SNR objects with high probability.
+	name = output_folder+'/outlier_fraction_z_SNR_'+str(SNR_limit)+'_highprob.png'
+	outlier_fraction_vs_redshift(zspec_highSNR[high_probs_highSNR_indices], zphot_highSNR[high_probs_highSNR_indices], name, title_for_plot)
+
 
 # Unused
 	#name = output_folder+'/z_phot_vs_z_spec_SNR_'+str(SNR_limit)+'.png'

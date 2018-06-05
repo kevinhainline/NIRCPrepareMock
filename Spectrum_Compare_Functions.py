@@ -224,7 +224,7 @@ def generate_sed_arrays(MAIN_OUTPUT_FILE='photz', OUTPUT_DIRECTORY='./OUTPUT', C
     
     templam = temp_seds['templam']
     
-    return tempfilt, z_grid, obs_sed, templam, temp_sed
+    return tempfilt, z_grid, obs_sed, templam, temp_sed, pz
     
 
 

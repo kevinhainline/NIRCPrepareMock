@@ -464,10 +464,13 @@ def outlier_fraction_vs_redshift(z_spec, z_phot, name, title_for_plot):
 			outlier_fraction_z_error[z] = np.sqrt(len(outliers)) / len(norm_diff_in_bin)*1.0
 			catastrophic_outlier_fraction_z[z] = len(catastrophic_outliers)*1.0 / len(norm_diff_in_bin)*1.0
 			catastrophic_outlier_fraction_z_error[z] = np.sqrt(len(catastrophic_outliers)) / len(norm_diff_in_bin)*1.0
-		if (outlier_fraction_z[z] == 0):
+		if (len(norm_diff_in_bin) == 0):
 			outlier_fraction_z[z] = -9999
-		if (catastrophic_outlier_fraction_z[z] == 0):
 			catastrophic_outlier_fraction_z[z] = -9999	
+#		if (outlier_fraction_z[z] == 0):
+#			outlier_fraction_z[z] = 0#-9999
+#		if (catastrophic_outlier_fraction_z[z] == 0):
+#			catastrophic_outlier_fraction_z[z] = 0#-9999	
 
 	plt.clf()
 	plt.figure(figsize=(10,6))
@@ -481,5 +484,6 @@ def outlier_fraction_vs_redshift(z_spec, z_phot, name, title_for_plot):
 	plt.ylabel('f$_{outliers}$')
 	plt.plot([0, 15],[0, 0], color = 'black')
 	max_y = np.max(catastrophic_outlier_fraction_z)
-	plt.axis([0, 15, -0.05, max_y + (0.1)*max_y])
+	#plt.axis([0, 15, -0.05, max_y + (2)*max_y])
+	plt.axis([0, 15, -0.05, 0.3])
 	plt.savefig(name, dpi = 300)
