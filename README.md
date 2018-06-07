@@ -234,3 +234,54 @@ The first is the bias, which is the average and standard deviation of
 that encompasses 68% of the residuals around 0. NMAD is Normalized Median Absolute Deviation
 of the residuals, which is defined as `NMAD(delta_z) = 1.48 * Median(abs(delta_z))`. Then
 there's the fraction of outliers with `abs(delta_z) > 0.15`.
+
+
+
+### `Explore_Outliers.py`
+This script allows you to look at the galaxy properties of individual selected outliers.
+The script takes in the summary file from `ComparePhotoZ_to_SpecZ` and shows a photometric
+redshift vs. spectroscopic redshift plot for those objects with a SNR above a specified
+limit, and a probability above a given limit, allowing you to select subsamples via the lasso
+tool, after which it pops up a subplot showing a histogram of one specified parameter or
+a scatter plot comparing two parameters for the subsample as compared to those objects
+from the full set of high SNR, high prob objects in the same redshift range as the
+selected objects. You can use this to easily see if outlier galaxies share a specific
+galaxy property. 
+```
+% python Explore_Outliers.py -h
+usage: Explore_Outliers.py [-h] -snrl SNR_LIMIT -jaguar JAGUAR_PATH -gpar
+                           GALAXY_PARAM [-eazy EAZY_OUTPUT_FILE]
+                           [-bpz BPZ_OUTPUT_FILE] [-lep LEPHARE_OUTPUT_FILE]
+                           [-sgpar SECOND_GALAXY_PARAM] [-minz MINIMUM_Z]
+                           [-maxz MAXIMUM_Z]
+
+optional arguments:
+  -h, --help            show this help message and exit
+  -snrl SNR_LIMIT, --snr_limit SNR_LIMIT
+                        SNR Limit for analysis?
+  -jaguar JAGUAR_PATH, --jaguar_path JAGUAR_PATH
+                        Path to JAGUAR Catalogs?
+  -gpar GALAXY_PARAM, --galaxy_param GALAXY_PARAM
+                        Galaxy Parameter For Subplot
+  -eazy EAZY_OUTPUT_FILE, --eazy_output_file EAZY_OUTPUT_FILE
+                        Analyze EAZY output?
+  -bpz BPZ_OUTPUT_FILE, --bpz_output_file BPZ_OUTPUT_FILE
+                        Analyze BPZ output?
+  -lep LEPHARE_OUTPUT_FILE, --lephare_output_file LEPHARE_OUTPUT_FILE
+                        Analyze Le Phare output?
+  -sgpar SECOND_GALAXY_PARAM, --second_galaxy_param SECOND_GALAXY_PARAM
+                        Galaxy Parameter For Subplot
+  -minz MINIMUM_Z, --minimum_z MINIMUM_Z
+                        Minimum Redshift for Analysis
+  -maxz MAXIMUM_Z, --maximum_z MAXIMUM_Z
+                        Maximum Redshift for Analysis
+```
+
+`% python Explore_Outliers.py -bpz /Path/to/BPZ_results_summary.dat -snrl 5 -jaguar /Path/To/Your/Mock_Catalog_Files/ -gpar mStar -sgpar max_stellar_age`
+
+In this example, the program will plot the BPZ results for those objects with a SNR (in
+the band from the run of `ComparePhotoZ_to_SpecZ.py`) above the `snrl` limit, and
+then allow you to select objects, wherein it will plot a subplot showing maximum stellar
+age to galaxy stellar mass. Right now, the full list of galaxy properties that can be
+compared are: `mStar`, `sSFR`, `tau`, and `max_stellar_age`, but more will be supported
+soon.  

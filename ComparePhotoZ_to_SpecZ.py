@@ -48,7 +48,7 @@ parser.add_argument(
   required=True
 )
 
-# NIRCam SNR Filter
+# NIRCam SNR Limit
 parser.add_argument(
   '-snrl','--snr_limit',
   help="SNR Limit for analysis?",
@@ -387,6 +387,22 @@ b = np.arange(0,max_redshift+1)
 high_probs_indices = np.where(z_prob > prob_limit)
 high_probs_highSNR_indices = np.where(zprob_highSNR > prob_limit)
 
+w = open(output_folder+version+'_results_summary.dat', 'a')
+if (args.eazy_output_file):
+	w.write('#ID  z_spec  z_phot  z_prob  '+args.nircam_filter+'_SNR \n')
+if (args.bpz_output_file):
+	w.write('#ID  z_spec  z_phot  ODDS  '+args.nircam_filter+'_SNR \n')
+if (args.lephare_output_file):
+	w.write('#ID  z_spec  z_phot  log('+args.nircam_filter+'_SNR) \n')
+for x in range(0, n_objects):
+	if (args.eazy_output_file):
+		w.write(str(np.int(ids[x]))+'  '+str(z_spec[x])+'  '+str(z_phot[x])+'  '+str(z_prob[x])+'  '+str(round(logNIRc_SNR[x],4))+'   \n')
+	if (args.bpz_output_file):
+		w.write(str(np.int(ids[x]))+'  '+str(z_spec[x])+'  '+str(z_phot[x])+'  '+str(z_prob[x])+'  '+str(round(logNIRc_SNR[x],4))+'   \n')
+	if (args.lephare_output_file):
+		w.write(str(np.int(ids[x]))+'  '+str(z_spec[x])+'  '+str(z_phot[x])+'  '+str(round(logNIRc_SNR[x],4))+'   \n')
+w.close()
+
 # # # # # # # # # # # # #
 #  Calculate Statisics  #
 # # # # # # # # # # # # #
@@ -585,6 +601,7 @@ if (args.outliers):
 if (args.make_plots):
 
 	# Residual Histograms
+	plt.clf()
 	n_bins = 200
 	b = plt.hist(residuals[np.where((residuals > -1.0) & (residuals < 1.0))[0]], bins = n_bins)
 	max_value = np.max(b[0])+np.max(b[0])*0.1
