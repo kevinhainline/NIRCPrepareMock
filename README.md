@@ -64,9 +64,8 @@ will be produced. Currently, the HST and NIRCam uncertainties are derived
 based on calculating the flux and errors through an aperture based on the size and 
 sersic index, and stacking individual images.
 ```
-usage: Subsample_to_NoisySubsample.py [-h] -in INPUT_FILE -out OUTPUT_FILE
-		                                      -hst HST_DEPTH -ni NIRCAM_DEPTH -fi
-		                                      FILTERS_FILE [-mf]
+usage: Subsample_to_NoisySubsample.py [-h] -in INPUT_FILE -out OUTPUT_FILE -ni
+                                      NIRCAM_DEPTH -fi FILTERS_FILE [-mf]
 
 optional arguments:
   -h, --help            show this help message and exit
@@ -74,21 +73,18 @@ optional arguments:
                         Input file with subample fluxes
   -out OUTPUT_FILE, --outputfile OUTPUT_FILE
                         Output file with noisy fluxes
-  -hst HST_DEPTH, --hst_depth HST_DEPTH
-                        HST survey: deeppointsource, deepextended, or
-                        flankingpointsource
   -ni NIRCAM_DEPTH, --nircam_depth NIRCAM_DEPTH
                         NIRCam survey: deep or medium
   -fi FILTERS_FILE, --filters_file FILTERS_FILE
                         Filters File Name
   -mf, --make_fits      Make Fits File?
+
 ```
 
-
-`% python Subsample_to_NoisySubsample.py -in sf_output.fits -o sf_noisy.dat -hst flankingpointsource -ni deep -fi filters.dat -mf`
+`% python Subsample_to_NoisySubsample.py -in sf_output.fits -o sf_noisy.dat -ni deep -fi filters.dat -mf`
 
 In this example, the name of the input file is specified (text or .fits), and 
-the HST and NIRCam depths are set. Next, the filters file is specified (any filter
+the NIRCam depths are set. Next, the filters file is specified (any filter
 that is not in the CANDELs or JADES surveys are not used), and finally, the make 
 fits flag is set, so a fits file will also be created. 
 
@@ -285,3 +281,66 @@ then allow you to select objects, wherein it will plot a subplot showing maximum
 age to galaxy stellar mass. Right now, the full list of galaxy properties that can be
 compared are: `mStar`, `sSFR`, `tau`, and `max_stellar_age`, but more will be supported
 soon.  
+
+
+
+### `NoisySubsample_to_ColorPlots.py`
+This script looks at color-color plots from the Noisy Subsample as a way of exploring
+how to select high-redshift objects by color. The user specifies the input catalog,
+the filters, and the redshift limit under review, and the code will then find all
+objects with a SNR above 3.0 (default, or the user specified value) in the reddest
+two filters, at which point it makes a color-color plot, a color-redshift plot, and
+a plot showing two curves. The first is the fraction of objects above a given selection 
+limit that are above the specified redshift limit as a function of selection limit, and 
+the second is the fraction of objects selected this way out of the total number of
+objects above the redshift limit. In this way, the user can see where the contamination
+is minimized and completeness is maximized, which is calculated and provided. 
+```
+usage: NoisySubsample_to_ColorPlots.py [-h] -in INPUT_FILE -yf1 YFILTER1 -yf2
+                                       YFILTER2 -xf1 XFILTER1 -xf2 XFILTER2
+                                       -zlim ZLIMIT [-idlist ID_NUMBER_LIST]
+                                       [-outf OPT_OUTPUT_FOLDER]
+                                       [-xlim XLIMIT] [-xplim XPLIMIT]
+                                       [-xnlim XNLIMIT] [-yslope YSLOPE]
+                                       [-snr SNR] [-ps] [-verb]
+
+optional arguments:
+  -h, --help            show this help message and exit
+  -in INPUT_FILE, --inputfile INPUT_FILE
+                        Input file with noisy fluxes
+  -yf1 YFILTER1, --yfilter1 YFILTER1
+                        Y-Axis Filter 1
+  -yf2 YFILTER2, --yfilter2 YFILTER2
+                        Y-Axis Filter 2
+  -xf1 XFILTER1, --xfilter1 XFILTER1
+                        X-Axis Filter 1
+  -xf2 XFILTER2, --xfilter2 XFILTER2
+                        X-Axis Filter 2
+  -zlim ZLIMIT, --zlimit ZLIMIT
+                        Redshift Limit?
+  -idlist ID_NUMBER_LIST, --id_number_list ID_NUMBER_LIST
+                        List of ID Numbers?
+  -outf OPT_OUTPUT_FOLDER, --opt_output_folder OPT_OUTPUT_FOLDER
+                        Optional Output Folder?
+  -xlim XLIMIT, --xlimit XLIMIT
+                        Limit on X-Axis Color?
+  -xplim XPLIMIT, --xplimit XPLIMIT
+                        Positive Limit on X-Axis Color?
+  -xnlim XNLIMIT, --xnlimit XNLIMIT
+                        Negative Limit on X-Axis Color?
+  -yslope YSLOPE, --yslope YSLOPE
+                        Slope on the Selection Line?
+  -snr SNR, --snr SNR   Filter SNR (default = 3.0)
+  -ps, --plot_to_screen
+                        Display Plot on Screen (Don't Save)?
+  -verb, --verbose      Verbose Mode?
+
+```
+
+`% python ignore NoisySubsample_to_ColorPlots.py -in /Path/To/Noisy/Output/File.fits -yf1 NRC_F090W -yf2 NRC_F115W -xf1 NRC_F115W -xf2 NRC_F150W -zlim 7.0 -yslope 0.4 -snr 5.0 -ps`
+
+In this example, the program will look at a noisy output file and plot, on the
+y-axis, `NRC_F090W - NRC_F115W`, and on the x-axis, `NRC_F115W - NRC_F150W`. It will
+look at how these colors can be used to select galaxies at `z > 7.0` by exploring
+color cuts with a slope of 0.2, for those objects with SNR > 5.0 in `NRC_F115W` and `NRC_F150W`
+filters. Finally, it plots to the screen instead of saving a plot to disk. 
