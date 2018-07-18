@@ -169,6 +169,8 @@ if (args.inputIDs):
 	make_sf = 0
 	make_q = 0
 	make_combine = 0
+else:
+	use_IDs = 0
 
 # Read in filters file
 

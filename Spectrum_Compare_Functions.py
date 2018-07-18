@@ -51,7 +51,7 @@ def return_true_spectrum(ID):
 
 def readEazyBinary(MAIN_OUTPUT_FILE='photz', OUTPUT_DIRECTORY='./OUTPUT', CACHE_FILE='Same'):
     """
-tempfilt, coeffs, temp_sed, pz = readEazyBinary(MAIN_OUTPUT_FILE='photz', \
+	tempfilt, coeffs, temp_sed, pz = readEazyBinary(MAIN_OUTPUT_FILE='photz', \
                                                 OUTPUT_DIRECTORY='./OUTPUT', \
                                                 CACHE_FILE = 'Same')
     Read Eazy BINARY_OUTPUTS files into structure data.
@@ -161,7 +161,7 @@ tempfilt, coeffs, temp_sed, pz = readEazyBinary(MAIN_OUTPUT_FILE='photz', \
         f.close()
         
     ###### Done.    
-    return tempfilt, coeffs, temp_sed, pz
+    return tempfilt, coeffs, temp_sed, pz, chi2fit
 
 
 def generate_sed_arrays(MAIN_OUTPUT_FILE='photz', OUTPUT_DIRECTORY='./OUTPUT', CACHE_FILE='Same'):
@@ -196,7 +196,7 @@ def generate_sed_arrays(MAIN_OUTPUT_FILE='photz', OUTPUT_DIRECTORY='./OUTPUT', C
     #import threedhst.eazyPy as eazy
     
     out = readEazyBinary(MAIN_OUTPUT_FILE=MAIN_OUTPUT_FILE, OUTPUT_DIRECTORY=OUTPUT_DIRECTORY, CACHE_FILE=CACHE_FILE)
-    tempfilt, coeffs, temp_seds, pz = out
+    tempfilt, coeffs, temp_seds, pz, chi2fit = out
     
     # The redshift gridpoint where the SEDs are evaluated
     z_grid = tempfilt['zgrid'][coeffs['izbest']]
@@ -224,7 +224,7 @@ def generate_sed_arrays(MAIN_OUTPUT_FILE='photz', OUTPUT_DIRECTORY='./OUTPUT', C
     
     templam = temp_seds['templam']
     
-    return tempfilt, z_grid, obs_sed, templam, temp_sed, pz
+    return tempfilt, z_grid, obs_sed, templam, temp_sed, pz, chi2fit
     
 
 

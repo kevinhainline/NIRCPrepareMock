@@ -179,13 +179,15 @@ def make_into_points(point_array):
 def plot_point_properties(indxys):
 	# First, we get the zspec and zphot values of the selected outliers.
 	zspec, zphot = make_into_points(indxys)
-	# And nowe we get the indices for these objects 
+	# And now we get the indices for these objects 
 	outlier_indices = np.zeros(len(zspec), dtype = 'int')
 	for j in range(0, len(zspec)):
 		outlier_indices[j] = get_index_from_zs(zspec[j], zphot[j])
 	# We print the IDs out to the screen
 	print "\n"
 	print "The Outlier ID's you selected"
+	print "z_spec = "+str(np.min(zspec))+" - "+str(np.max(zspec))
+	print "z_phot = "+str(np.min(zphot))+" - "+str(np.max(zphot))
 	print catalog_all_IDs[outlier_indices]
 	# And now we plot them as a subsample
 	ax2 = fig.add_subplot(122)
@@ -200,7 +202,7 @@ def plot_point_properties(indxys):
 		ax2.scatter(all_object_parameter_values, all_object_second_parameter_values, color = 'grey', alpha = 0.5)
 		ax2.scatter(outlier_parameter_values, outlier_second_parameter_values, color = 'red')
 		ax2.set_xlim([param_min, param_max])
-		ax2.set_xlim([second_param_min, second_param_max])
+		ax2.set_ylim([second_param_min, second_param_max])
 		ax2.set_xlabel(param_label)
 		ax2.set_ylabel(second_param_label)
 	# This is if you have only one parameter and want to make a histogram
@@ -221,7 +223,7 @@ def plot_point_properties(indxys):
 	ax2.text(0.75, 0.75, str(len(zspec))+' Galaxies', horizontalalignment='right', verticalalignment='top', color = 'red', transform=ax2.transAxes)
 	ax2.text(0.75, 0.65, str(len(all_object_parameter_values))+' Galaxies', horizontalalignment='right', verticalalignment='top', color = 'grey', transform=ax2.transAxes)
 
-# This function gets the indices from the redshifts
+# This function gets the indices in the full entire catalog from the photo-z's and spec-z's
 def get_index_from_zs(zspec, zphot):
 	outlier_group_ID_index = np.where((outlier_z_spec == zspec) & (outlier_z_phot == zphot))[0][0]
 	outlier_group_ALL_index = np.where(catalog_all_IDs == outlier_z_IDs[outlier_group_ID_index])[0][0]
@@ -230,11 +232,19 @@ def get_index_from_zs(zspec, zphot):
 # This function gets the parameter indices for all of the plotted objects in a given
 # redshift range.
 def get_all_object_parameter_indices(minzspec, maxzspec):
-	all_object_indices = np.where((z_spec[high_SNR_high_prob_indices] >= minzspec) & (z_spec[high_SNR_high_prob_indices] <= maxzspec))[0]
+#	all_object_indices = np.where((z_spec[high_SNR_high_prob_indices] >= minzspec) & (z_spec[high_SNR_high_prob_indices] <= maxzspec))[0]
+	if (args.eazy_output_file):
+		all_object_indices = np.where((z_spec[high_SNR_high_prob_lowq_z_indices] >= minzspec) & (z_spec[high_SNR_high_prob_lowq_z_indices] <= maxzspec))[0]
+	if (args.bpz_output_file):
+		all_object_indices = np.where((z_spec[high_SNR_high_prob_lowchisq2_indices] >= minzspec) & (z_spec[high_SNR_high_prob_lowchisq2_indices] <= maxzspec))[0]
 	number_of_all_objects = len(all_object_indices)
 	full_catalog_indices = np.zeros(number_of_all_objects, dtype = 'int')
 	for b in range(0, number_of_all_objects):
-		full_catalog_indices[b] = np.where(catalog_all_IDs == ids[high_SNR_high_prob_indices][all_object_indices][b])[0][0]
+		#full_catalog_indices[b] = np.where(catalog_all_IDs == ids[high_SNR_high_prob_indices][all_object_indices][b])[0][0]
+		if (args.eazy_output_file):
+			full_catalog_indices[b] = np.where(catalog_all_IDs == ids[high_SNR_high_prob_lowq_z_indices][all_object_indices][b])[0][0]
+		if (args.bpz_output_file):
+			full_catalog_indices[b] = np.where(catalog_all_IDs == ids[high_SNR_high_prob_lowchisq2_indices][all_object_indices][b])[0][0]
 	return full_catalog_indices
 
 # This function gets the catastrophic outliers from a group of objects given their z_spec
@@ -309,6 +319,13 @@ elif (args.galaxy_param == 'max_stellar_age'):
 	param_min = 6
 	param_max = 10
 	param_label = 'max_stellar_age'
+elif (args.galaxy_param == 'tauV_eff'):
+	catalog_sf_param = sftestfits[1].data[args.galaxy_param]
+	catalog_q_param = (qtestfits[1].data['ID']*0)
+	param_min = 0
+	param_max = 3.0
+	param_label = 'tauV_eff'
+
 else:
 	sys.exit("The Specified Galaxy Parameter ("+args.galaxy_parameter+") Is Currently Not Supported")
 
@@ -343,6 +360,12 @@ if (args.second_galaxy_param):
 		second_param_min = 6
 		second_param_max = 10
 		second_param_label = 'max_stellar_age'
+	elif (args.second_galaxy_param == 'tauV_eff'):
+		second_catalog_sf_param = sftestfits[1].data[args.second_galaxy_param]
+		second_catalog_q_param = (qtestfits[1].data['ID']*0)
+		second_param_min = 0
+		second_param_max = 3.0
+		second_param_label = 'tauV_eff'
 	else:
 		sys.exit("The Specified Second Galaxy Parameter ("+args.second_galaxy_parameter+") Is Currently Not Supported")
 
@@ -354,15 +377,16 @@ if (args.second_galaxy_param):
 if (args.eazy_output_file):
 	version = 'EAZY'
 	prob_limit = 0.9
-	#ID  z_spec  z_phot  ODDS  NRC_F200W_SNR 
-	#28  0.201987  0.26  1.0  2.829   
+	q_z_limit = 3.0
+	#ID  z_spec  z_phot  z_prob  q_z NRC_F200W_SNR 
 
 	output_zs = np.loadtxt(args.eazy_output_file) 
 	ids = output_zs[:,0]
 	z_spec = output_zs[:,1]
 	z_phot = output_zs[:,2]
 	z_prob = output_zs[:,3]
-	logNIRc_SNR = output_zs[:,4]
+	q_z = output_zs[:,4]
+	logNIRc_SNR = output_zs[:,5]
 	title_for_plot = 'EAZY Results'
 	
 # Le Phare
@@ -382,19 +406,26 @@ if (args.lephare_output_file):
 if (args.bpz_output_file):
 	version = 'BPZ'
 	prob_limit = 0.95
+	chisq2_limit = 1.0
+	#ID  z_spec  z_phot  ODDS  chisq2 NRC_F200W_SNR 
 
 	output_zs = np.loadtxt(args.bpz_output_file) 
 	ids = output_zs[:,0]
 	z_spec = output_zs[:,1]
 	z_phot = output_zs[:,2]
 	z_prob = output_zs[:,3]
-	logNIRc_SNR = output_zs[:,4]
+	chisq2 = output_zs[:,4]
+	logNIRc_SNR = output_zs[:,5]
 
 	title_for_plot = 'BPZ Results'
 
 # Get High SNR Objects
 high_SNR_indices = np.where(logNIRc_SNR >= log_SNR_limit)[0]
 high_SNR_high_prob_indices = np.where((logNIRc_SNR >= log_SNR_limit) & (z_prob > prob_limit))[0]
+if (args.eazy_output_file):
+	high_SNR_high_prob_lowq_z_indices = np.where((logNIRc_SNR >= log_SNR_limit) & (z_prob > prob_limit) & (q_z <= q_z_limit))[0]
+if (args.bpz_output_file):
+	high_SNR_high_prob_lowchisq2_indices = np.where((logNIRc_SNR >= log_SNR_limit) & (z_prob > prob_limit) & (chisq2 <= chisq2_limit))[0]
 
 # High SNR 
 high_SNR_outlier_IDs, high_SNR_outlier_zspec, high_SNR_outlier_zphot = find_catastrophic_outliers(ids[high_SNR_indices], z_spec[high_SNR_indices], z_phot[high_SNR_indices], 0.15)
@@ -411,12 +442,38 @@ for k in range(0,len(high_SNR_high_prob_outlier_IDs)):
 high_SNR_high_prob_outlier_logNIRc_SNR = logNIRc_SNR[high_SNR_high_prob_outlier_indices]
 high_SNR_high_prob_outlier_IDs = ids[high_SNR_high_prob_outlier_indices]
 
+if (args.eazy_output_file):
+	# High SNR, High Probability, Low Q_z
+	high_SNR_high_prob_lowq_z_outlier_IDs, high_SNR_high_prob_lowq_z_outlier_zspec, high_SNR_high_prob_lowq_z_outlier_zphot = find_catastrophic_outliers(ids[high_SNR_high_prob_lowq_z_indices], z_spec[high_SNR_high_prob_lowq_z_indices], z_phot[high_SNR_high_prob_lowq_z_indices], 0.15)
+	high_SNR_high_prob_lowq_z_outlier_indices = np.zeros(len(high_SNR_high_prob_lowq_z_outlier_IDs), dtype = 'int')
+	for k in range(0,len(high_SNR_high_prob_lowq_z_outlier_IDs)):
+		high_SNR_high_prob_lowq_z_outlier_indices[k] = np.where(ids == high_SNR_high_prob_lowq_z_outlier_IDs[k])[0][0]
+	high_SNR_high_prob_lowq_z_outlier_logNIRc_SNR = logNIRc_SNR[high_SNR_high_prob_lowq_z_outlier_indices]
+	high_SNR_high_prob_lowq_z_outlier_IDs = ids[high_SNR_high_prob_lowq_z_outlier_indices]
+	
+if (args.bpz_output_file):
+	# High SNR, High Probability, Low Chisq2
+	high_SNR_high_prob_lowchisq2_outlier_IDs, high_SNR_high_prob_lowchisq2_outlier_zspec, high_SNR_high_prob_lowchisq2_outlier_zphot = find_catastrophic_outliers(ids[high_SNR_high_prob_lowchisq2_indices], z_spec[high_SNR_high_prob_lowchisq2_indices], z_phot[high_SNR_high_prob_lowchisq2_indices], 0.15)
+	high_SNR_high_prob_lowchisq2_outlier_indices = np.zeros(len(high_SNR_high_prob_lowchisq2_outlier_IDs), dtype = 'int')
+	for k in range(0,len(high_SNR_high_prob_lowchisq2_outlier_IDs)):
+		high_SNR_high_prob_lowchisq2_outlier_indices[k] = np.where(ids == high_SNR_high_prob_lowchisq2_outlier_IDs[k])[0][0]
+	high_SNR_high_prob_lowchisq2_outlier_logNIRc_SNR = logNIRc_SNR[high_SNR_high_prob_lowchisq2_outlier_indices]
+	high_SNR_high_prob_lowchisq2_outlier_IDs = ids[high_SNR_high_prob_lowchisq2_outlier_indices]
+
+
 # I may have to update this at some point. Right now, the code looks at the outliers
 # that are high SNR and high probability
-outlier_z_IDs = high_SNR_high_prob_outlier_IDs
-outlier_z_spec = high_SNR_high_prob_outlier_zspec
-outlier_z_phot = high_SNR_high_prob_outlier_zphot
-outlier_snr_colors = high_SNR_high_prob_outlier_logNIRc_SNR
+if (args.eazy_output_file):
+	outlier_z_IDs = high_SNR_high_prob_lowq_z_outlier_IDs#high_SNR_high_prob_outlier_IDs
+	outlier_z_spec = high_SNR_high_prob_lowq_z_outlier_zspec#high_SNR_high_prob_outlier_zspec
+	outlier_z_phot = high_SNR_high_prob_lowq_z_outlier_zphot#high_SNR_high_prob_outlier_zphot
+	outlier_snr_colors = high_SNR_high_prob_lowq_z_outlier_logNIRc_SNR#high_SNR_high_prob_outlier_logNIRc_SNR
+if (args.bpz_output_file):
+	outlier_z_IDs = high_SNR_high_prob_lowchisq2_outlier_IDs#high_SNR_high_prob_outlier_IDs
+	outlier_z_spec = high_SNR_high_prob_lowchisq2_outlier_zspec#high_SNR_high_prob_outlier_zspec
+	outlier_z_phot = high_SNR_high_prob_lowchisq2_outlier_zphot#high_SNR_high_prob_outlier_zphot
+	outlier_snr_colors = high_SNR_high_prob_lowchisq2_outlier_logNIRc_SNR#high_SNR_high_prob_outlier_logNIRc_SNR
+
 
 # Figure Size
 # Get current size
@@ -432,7 +489,11 @@ plt.rcParams["figure.figsize"] = fig_size
 plt.ion()
 subplot_kw = dict(xlim=(0, 15), ylim=(0, 15), autoscale_on=False)
 fig, ax = plt.subplots(subplot_kw=subplot_kw)
-ax.scatter(z_spec[high_SNR_high_prob_indices], z_phot[high_SNR_high_prob_indices], edgecolor = 'None', alpha = 0.2, s = 8, color = 'grey')
+if (args.eazy_output_file):
+	ax.scatter(z_spec[high_SNR_high_prob_lowq_z_indices], z_phot[high_SNR_high_prob_lowq_z_indices], edgecolor = 'None', alpha = 0.2, s = 8, color = 'grey')
+if (args.bpz_output_file):
+	ax.scatter(z_spec[high_SNR_high_prob_lowchisq2_indices], z_phot[high_SNR_high_prob_lowchisq2_indices], edgecolor = 'None', alpha = 0.2, s = 8, color = 'grey')
+#ax.scatter(z_spec[high_SNR_high_prob_indices], z_phot[high_SNR_high_prob_indices], edgecolor = 'None', alpha = 0.2, s = 8, color = 'grey')
 #pts = ax.scatter(outlier_z_spec, outlier_z_phot, s=8, color = 'red', edgecolor = 'None')
 #colorbar = ax.scatter(outlier_z_spec, outlier_z_phot, s=50, c = outlier_snr_colors, edgecolor = 'None')
 pts = ax.scatter(outlier_z_spec, outlier_z_phot, s=30, c = outlier_snr_colors, edgecolor = 'None')

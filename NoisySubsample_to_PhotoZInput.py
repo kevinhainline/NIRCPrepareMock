@@ -8,6 +8,7 @@ from astropy.io import fits
 from astropy.table import Table
 
 filter_file_name = 'NoisySubsample_to_PhotoZInput_filters.dat'
+#filter_file_name = 'NoisySubsample_to_PhotoZInput_medium_filters.dat'
 # The filters to be used in the JADES survey, and also the 
 # filters that are used in the noisy files. 
 noisy_jades_filters = ['HST_F435W', 'HST_F606W', 'HST_F775W', 'HST_F814W', 'HST_F850LP', 'NRC_F070W', 'NRC_F090W', 'NRC_F115W', 'NRC_F150W', 'NRC_F200W', 'NRC_F277W', 'NRC_F335M', 'NRC_F356W', 'NRC_F410M', 'NRC_F444W']

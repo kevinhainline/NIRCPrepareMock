@@ -74,7 +74,8 @@ pixel_size = np.array([0.049, 0.049, 0.049, 0.049, 0.049, 0.032, 0.032, 0.032, 0
 bkgnd_nJy = np.array([4.778, 9.237, 12.240, 12.350, 12.678, 6.39, 6.39, 5.92, 4.97, 3.79, 18.76, 13.82, 14.81, 21.72, 31.60])     # /* backgrounds_for_GOODS_S_in_nJy/pix */
 e_sec_nJy = np.array([0.005119048, 0.010952381, 0.005, 0.006506024, 0.002435897, 0.0189, 0.0268, 0.0297, 0.0392, 0.0452, 0.0375, 0.0164, 0.0433, 0.0177, 0.0379])   # /* e/sec/nJy  */
 read_noise = np.array([5.6, 5.6, 5.6, 5.6, 5.6, 6.0, 6.0, 6.0, 6.0, 6.0, 9.0, 9.0, 9.0, 9.0, 9.0]) # /* read_noise */
-n_exposures = np.array([112, 112, 288, 256, 288, 44, 44, 58, 43, 28, 35, 22, 28, 44, 44]) # /* No._of_exposures */
+n_exposures_medium = np.array([112, 112, 288, 256, 288, 5, 8, 8, 7, 5, 7, 5, 5, 8, 8]) # /* No._of_exposures (MEDIUM) */
+n_exposures_deep = np.array([112, 112, 288, 256, 288, 0, 44, 58, 43, 28, 35, 22, 28, 44, 44]) # /* No._of_exposures (DEEP) */
 base_exposure_time = np.array([1200., 1200., 1200., 1200., 1200., 1385., 1385., 1385., 1385., 1385., 1385., 1385., 1385., 1385., 1385.])#  /* Base_exposure_time */
 #medium_time = np.array([152000., 174000., 377800., 50800., 421600., 0.00000, 11700., 11700., 9100., 7500., 9200., 6700., 7500., 11700., 11700.]) # Deep_survey_exp_times_per_filter */
 #deep_time = np.array([152000., 174000., 377800., 50800., 421600., 60500., 60500., 80800., 59300., 38800., 49100., 30900., 38800., 60500., 60500.]) # Deep_survey_exp_times_per_filter */
@@ -120,16 +121,6 @@ parser.add_argument(
   action="store",
   type=str,
   dest="output_file",
-  required=True
-)
-
-# HST Depth
-parser.add_argument(
-  '-hst','--hst_depth',
-  help="HST survey: deeppointsource, deepextended, or flankingpointsource",
-  action="store",
-  type=str,
-  dest="hst_depth",
   required=True
 )
 
@@ -189,23 +180,16 @@ number_filters = len(filters)
 #			number_matching_survey = number_matching_survey + 1
 
 
-# Parse HST depth
-if (args.hst_depth == 'deeppointsource'):
-	hst_depth_header = 'deeppointsource'
-elif (args.hst_depth == 'deepextended'):
-	hst_depth_header = 'deepextended'
-elif (args.hst_depth == 'flankingpointsource'):
-	hst_depth_header = 'flankingpointsource'
-else:
-	sys.exit("HST depth should be deeppointsource, deepextended, or flankingpointsource")
 
 # Parse NIRCam depth
 if (args.nircam_depth == 'deep'):
 	#time = deep_time
 	time = base_exposure_time
+	n_exposures = n_exposures_deep
 elif (args.nircam_depth == 'medium'):
 	#time = medium_time
 	time = base_exposure_time
+	n_exposures = n_exposures_medium
 else:
 	sys.exit("NIRCam depth should be deep or medium")
 
@@ -241,15 +225,6 @@ else:
 		apparent_flux[:][j] = cat_file_full[:,5+j]
 	
 
-# Open up the HST noise file
-noise_file = '/Users/knh/Desktop/NIRCam/photometric_redshifts/prep_code/old_codes/grogin_5_sigma_sensitivities.txt'
-tab = ascii.read(noise_file, names=['filter_names','deeppointsource','deepextended','flankingpointsource','ps_test1','ps_test2','ps_test3'], data_start=0)
-filter_names = tab['filter_names'] 
-
-hst_noise_five_sigma = tab[hst_depth_header] 
-
-hst_noise_five_sigma_flux = 10**((-2.0/5.0) * (hst_noise_five_sigma + 48.60))
-hst_noise_one_sigma_flux = hst_noise_five_sigma_flux/1e-23 / 1e-9 / 5.0
 
 f = open(filenameroot+'.NOFIRSTLINE.dat', 'a')
 
@@ -281,7 +256,7 @@ for x in range(0, n_objects):
 	ap_radius = aperture[i_ap]
 
 	ap_corr = updated_sersic(sersic_n[x], re_major[x], ap_radius)
-	print "ID "+str(ID_numbers[x])+", Re_Major = "+str(re_major[x])+", Aperture Radius = "+str(ap_radius)+", Aperture Correction = "+str(ap_corr) 
+	#print "ID "+str(ID_numbers[x])+", Re_Major = "+str(re_major[x])+", Aperture Radius = "+str(ap_radius)+", Aperture Correction = "+str(ap_corr) 
 	
 	if (ap_corr > 1.0):
 		ap_corr = 1.0
@@ -425,31 +400,35 @@ for x in range(0, n_objects):
 
 		# NIRCam FILTERS AND FLUX ERROR ESTIMATES
 		if (filters[j] == 'NRC_F070W'):
-			filter_index = 5
-			final_number_filters = final_number_filters + 1
-			final_filters = np.append(final_filters, ['NRC_F070W'])
-			filter_found = 1
-			flux_value = apparent_flux[j][x]
-			pixel_area = 3.14159265 * ap_radius * ap_radius / (pixel_size[filter_index] * pixel_size[filter_index])
-			filt_bkgnd = pixel_area * bkgnd_nJy[filter_index]
-			flux = ap_corr * flux_value + filt_bkgnd
-			ftemp = flux * e_sec_nJy[filter_index]
-			ferror = np.sqrt(ftemp * time[filter_index] + (read_noise[filter_index]*pixel_area)*(read_noise[filter_index]))							
-			ferror = ferror / (e_sec_nJy[filter_index] * time[filter_index])
-			
-			sum_flux = 0.0
-			sum_flux2 = 0.0
-			for k in range(0, n_exposures[filter_index]):
-				ftemp = ferror * np.random.normal()
-				flux  = ap_corr * flux_value + ftemp
-				sum_flux = sum_flux + flux
-				sum_flux2 = sum_flux2 + (flux * flux)
-
-			filter_flux_value = sum_flux / n_exposures[filter_index]
-			filter_sig_value = (sum_flux2 - (sum_flux * sum_flux)/n_exposures[filter_index])/(n_exposures[filter_index]-1)
-			filter_sig_value = np.sqrt(filter_sig_value / n_exposures[filter_index])
-			average_sig_value[j] = average_sig_value[j] + filter_sig_value
-
+			if (args.nircam_depth == 'medium'):
+				filter_index = 5
+				final_number_filters = final_number_filters + 1
+				final_filters = np.append(final_filters, ['NRC_F070W'])
+				filter_found = 1
+				flux_value = apparent_flux[j][x]
+				pixel_area = 3.14159265 * ap_radius * ap_radius / (pixel_size[filter_index] * pixel_size[filter_index])
+				filt_bkgnd = pixel_area * bkgnd_nJy[filter_index]
+				flux = ap_corr * flux_value + filt_bkgnd
+				ftemp = flux * e_sec_nJy[filter_index]
+				ferror = np.sqrt(ftemp * time[filter_index] + (read_noise[filter_index]*pixel_area)*(read_noise[filter_index]))							
+				ferror = ferror / (e_sec_nJy[filter_index] * time[filter_index])
+				
+				sum_flux = 0.0
+				sum_flux2 = 0.0
+				for k in range(0, n_exposures[filter_index]):
+					ftemp = ferror * np.random.normal()
+					flux  = ap_corr * flux_value + ftemp
+					sum_flux = sum_flux + flux
+					sum_flux2 = sum_flux2 + (flux * flux)
+	
+				filter_flux_value = sum_flux / n_exposures[filter_index]
+				filter_sig_value = (sum_flux2 - (sum_flux * sum_flux)/n_exposures[filter_index])/(n_exposures[filter_index]-1)
+				filter_sig_value = np.sqrt(filter_sig_value / n_exposures[filter_index])
+				average_sig_value[j] = average_sig_value[j] + filter_sig_value
+			else:
+				filter_flux_value = -9999
+				filter_sig_value = -9999
+				average_sig_value[j] = -9999
 
 		if (filters[j] == 'NRC_F090W'):
 			filter_index = 6
