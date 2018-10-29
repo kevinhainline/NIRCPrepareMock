@@ -3,6 +3,8 @@ import sys
 import math
 import argparse
 import numpy as np
+#import seaborn as sns
+from matplotlib.colors import LogNorm
 #import matplotlib
 import matplotlib.pyplot as plt
 from astropy.io import fits
@@ -85,7 +87,6 @@ def photz_specz_offset(z_spec, z_phot, color_data, name, filtername, title_for_p
 
 	b = np.arange(0,max_redshift+1)
 
-#	cax = ax1.scatter(z_spec, z_phot, s=5.0, c=color_data, edgecolors='none')
 	ax1.scatter(z_spec, z_phot, s=5.0, c=color_data, edgecolors='none')
 	
 	ax1.plot(b, b, c='black', linewidth = 1.5)
@@ -104,17 +105,8 @@ def photz_specz_offset(z_spec, z_phot, color_data, name, filtername, title_for_p
 
 	ax1.plot(zspec_vals, zphot_vals_050_pos, '-', color = 'grey', alpha = 0.2, label = '(z$_{spec}$ - z$_{phot}$) / (1 + z$_{spec}$) = 0.50')
 	ax1.plot(zspec_vals, zphot_vals_050_neg, '-', color = 'grey', alpha = 0.2, label = '(z$_{spec}$ - z$_{phot}$) / (1 + z$_{spec}$) = 0.50')
-
-
-#	ax1.plot([0, 15],[0, 15-((1+15)*0.15)], '-', color = 'grey', alpha = 0.4, label = '(z$_{spec}$ - z$_{phot}$) / (1 + z$_{spec}$) = 0.15')
-#	ax1.plot([0, 15],[0, 15+((1+15)*0.15)], '-', color = 'grey', alpha = 0.4)
-
-#	ax1.plot([0, 15],[0, 15-((1+15)*0.5)], '-', color = 'grey', alpha = 0.2, label = '(z$_{spec}$ - z$_{phot}$) / (1 + z$_{spec}$) = 0.15')
-#	ax1.plot([0, 15],[0, 23], '-', color = 'grey', alpha = 0.2)
-#	ax1.plot([0, 2.5],[0, 4.25], '-', color = 'red', alpha = 0.2)
-#	ax1.plot([0, 6],[0, 9.5], '-', color = 'blue', alpha = 0.2)
-
-
+	
+	ax1.text(0.05, 0.9, 'N$_{objects}$ = '+str(len(z_spec)), transform=ax1.transAxes)
 	ax1.set_xlabel('$z_{spec}$')
 	ax1.set_ylabel('$z_{phot}$')
 	#cbar = fig.colorbar(cax, label = colorlabel, orientation="horizontal")
@@ -139,6 +131,84 @@ def photz_specz_offset(z_spec, z_phot, color_data, name, filtername, title_for_p
 	cbar = fig.colorbar(cax, label = colorlabel, orientation="horizontal")
 
 	plt.savefig(name, format='png', dpi=600)
+
+def photz_specz_density(z_spec, z_phot, name, filtername, title_for_plot, min_redshift, max_redshift, colorlabel):
+	fig = plt.figure(figsize=(7,6))
+	ax1 = fig.add_subplot(111)
+
+	b = np.arange(0,max_redshift+1)
+
+	# Hexbin plot 
+	#good_objects = np.where(z_phot > 0)
+	#plt.hexbin(z_spec[good_objects], z_phot[good_objects], gridsize=300, norm=LogNorm(), cmap=plt.cm.viridis)
+	
+	# Hist2D
+	#plt.hist2d(z_spec, z_phot, bins=(100, 100))
+	histbins = 100
+	good_objects = np.where(z_phot > 0)
+	plt.hist2d(z_spec[good_objects], z_phot[good_objects], bins=histbins, norm=LogNorm(), cmap='viridis')
+	plt.colorbar(label = colorlabel)
+
+	# SNS scatterplot
+	#sns.set_style("white")
+	#sns.kdeplot(z_spec, z_phot, n_levels=30, gridsize=300)
+	#ax1.scatter(z_spec, z_phot, s=5.0, alpha = 0.1)
+	
+	# joint plot
+	#g = (sns.jointplot(x=z_spec, y=z_phot, xlim = [0.2, max_redshift], ylim = [-0.1, max_redshift], s=5, edgecolor="None"))
+	
+	ax1.plot(b, b, c='black', linewidth = 1.5, alpha = 0.1)
+
+	ax1.set_xlim([0.2, max_redshift])
+	ax1.set_ylim([-0.1, max_redshift])
+
+	ax1.text(0.05, 0.9, 'N$_{objects}$ = '+str(len(z_spec)), transform=ax1.transAxes)
+	ax1.set_xlabel('$z_{spec}$')
+	ax1.set_ylabel('$z_{phot}$')
+	ax1.set_title(title_for_plot)
+
+	plt.savefig(name, format='png', dpi=600)
+
+def reject_outliers(data, m=2):
+    return data[abs(data - np.mean(data)) < m * np.std(data)]
+
+def mag_error_histogram(z_spec, z_phot, mag_min, mag_max, name):
+	
+	sigma_outlier_value = 2.0
+
+	fig = plt.figure(figsize=(6,5))
+	ax1 = fig.add_subplot(111)
+	
+	norm_diff = (z_spec - z_phot) / (1 + z_spec)
+	#print "Average = "+str(np.mean(norm_diff))
+	#print "Median = "+str(np.median(norm_diff))
+	#print "standard deviation = "+str(np.std(norm_diff))
+	nooutliers = reject_outliers(norm_diff, m = sigma_outlier_value)
+	#print "Average (no outliers) = "+str(np.mean(nooutliers))
+	#print "Median (no outliers) = "+str(np.median(nooutliers))
+	#print "standard deviation (no outliers) = "+str(np.std(nooutliers))
+	mag_error_bins = np.arange(-2.0, 2.0, 0.01)
+	plt.hist(norm_diff, bins = mag_error_bins)
+	ax1.set_xlabel('(z$_{spec}$ - z$_{phot}$) / (1 + z$_{spec}$)')
+	ax1.set_ylabel('Number of Objects Per Bin')
+	ax1.set_xlim([-0.3, 0.9])
+	plt.title('m(AB,F200W) = '+str(mag_min)+' - '+str(mag_max))
+
+	plt.axvline(x = np.mean(norm_diff), color = 'grey', alpha = 0.7)
+	plt.axvline(x=np.mean(norm_diff)+np.std(norm_diff), color = 'grey', alpha = 0.3)
+	plt.axvline(x=np.mean(norm_diff)-np.std(norm_diff), color = 'grey', alpha = 0.3)
+
+	plt.axvline(x = np.mean(nooutliers), color = 'red', alpha = 0.7)
+	plt.axvline(x=np.mean(nooutliers)+np.std(nooutliers), color = 'red', alpha = 0.3)
+	plt.axvline(x=np.mean(nooutliers)-np.std(nooutliers), color = 'red', alpha = 0.3)
+
+	plt.text(0.57, 0.95,'<(z$_{spec}$ - z$_{phot}$) / (1 + z$_{spec}$)> Statistics', horizontalalignment='left',  verticalalignment='center', size = 5, transform = ax1.transAxes)
+	plt.text(0.57, 0.90,'All Objects', horizontalalignment='left',  verticalalignment='center', size = 5, transform = ax1.transAxes)
+	plt.text(0.6, 0.85,'Average (Median) = '+str(round(np.mean(norm_diff),4))+' ('+str(round(np.median(norm_diff),4))+') +/- '+str(round(np.std(norm_diff),4)), horizontalalignment='left',  verticalalignment='center', size = 5, transform = ax1.transAxes)
+	plt.text(0.57, 0.80,'Without '+str(sigma_outlier_value)+' Sigma Outliers', horizontalalignment='left',  verticalalignment='center', size = 5, color = 'red', transform = ax1.transAxes)
+	plt.text(0.6, 0.75,'Average (Median) = '+str(round(np.mean(nooutliers),4))+' ('+str(round(np.median(nooutliers),4))+') +/- '+str(round(np.std(nooutliers),4)), horizontalalignment='left',  verticalalignment='center', size = 5, color = 'red', transform = ax1.transAxes)
+ 
+ 	plt.savefig(name, format='png', dpi=600)
 	
 
 def catastrophic_outlier_plots(z_spec, z_phot, catastrophic_z_spec, catastrophic_z_phot, name, title_for_plot, min_redshift, max_redshift):

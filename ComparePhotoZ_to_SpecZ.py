@@ -134,6 +134,26 @@ parser.add_argument(
   required=False
 )
 
+# Minimum Mag For Error Histogram
+parser.add_argument(
+  '-magmin','--magmin',
+  help="Minimum Mag for Error Histogram",
+  action="store",
+  type=float,
+  dest="mag_min",
+  required=False
+)
+
+# Maximum Mag For Error Histogram
+parser.add_argument(
+  '-magmax','--magmax',
+  help="Maximum Mag for Error Histogram",
+  action="store",
+  type=float,
+  dest="mag_max",
+  required=False
+)
+
 # Make Plots?
 parser.add_argument(
   '-mp','--make_plots',
@@ -152,6 +172,15 @@ parser.add_argument(
   required=False
 )
 
+# Make Point Density Plots?
+parser.add_argument(
+  '-pointdensity',
+  help="Make Point Density Plots?",
+  action="store_true",
+  dest="pointdensity",
+  required=False
+)
+
 # Original JAGUAR Catalog Path
 parser.add_argument(
   '-jaguar','--jaguar_path',
@@ -161,6 +190,8 @@ parser.add_argument(
   dest="jaguar_path",
   required=False
 )
+
+#pointdensity
 
 # JAGUAR Parameter For Coloring Plots
 parser.add_argument(
@@ -245,15 +276,15 @@ for x in range(0, number_objects):
 		NIRc_mag[x] = 99.99
 		NIRc_SNR[x] = 0.00
 
-
 # Now, let's calculate the SNR ratio for our filter of choice:
 #NIRc_SNR = NIRc_flux/NIRc_err
 n_objects = len(NIRc_SNR)
 
 logNIRc_SNR = np.zeros(number_objects)
+NIRc_SNR_raw = np.zeros(number_objects)
 n_highSNR_objects = 0
 for x in range(0, number_objects):
-
+	NIRc_SNR_raw[x] = NIRc_SNR[x]
 	if (NIRc_SNR[x] >= args.snr_limit):
 		n_highSNR_objects = n_highSNR_objects+1
 
@@ -261,6 +292,12 @@ for x in range(0, number_objects):
 		NIRc_SNR[x] = 1e-5
 
 	logNIRc_SNR[x] = math.log10(NIRc_SNR[x])
+
+if (args.mag_min):
+	mag_min = np.float(args.mag_min)
+if (args.mag_max):
+	mag_max = np.float(args.mag_max)
+
 
 # Let's open up the catalogs, if they're desired
 
@@ -352,7 +389,8 @@ if (args.bpz_output_file):
 	output_folder = optional_output_folder+'BPZ_analysis/'
 	if not os.path.exists(output_folder):
 	    os.makedirs(output_folder)
-
+	#    id      zb   zbmin  zbmax    tb    odds    zml   tml    chisq   zspec     M0      chisq2   nfdet  nfobs  
+	#     10   0.22  0.100   0.340  14.6  1.0000   0.22  14.6    2.562   0.201  24.573     0.0461     14     14
 	output_zs = np.loadtxt(args.bpz_output_file) 
 	ids = output_zs[:,0]
 	z_spec = redshifts
@@ -416,11 +454,11 @@ if (args.lephare_output_file):
 	w.write('#ID  z_spec  z_phot  log('+args.nircam_filter+'_SNR) \n')
 for x in range(0, n_objects):
 	if (args.eazy_output_file):
-		w.write(str(np.int(ids[x]))+'  '+str(z_spec[x])+'  '+str(z_phot[x])+'  '+str(z_prob[x])+'  '+str(q_z[x])+'  '+str(round(logNIRc_SNR[x],4))+'   \n')
+		w.write(str(np.int(ids[x]))+'  '+str(z_spec[x])+'  '+str(z_phot[x])+'  '+str(z_prob[x])+'  '+str(q_z[x])+'  '+str(round(NIRc_SNR_raw[x],4))+'   \n')
 	if (args.bpz_output_file):
-		w.write(str(np.int(ids[x]))+'  '+str(z_spec[x])+'  '+str(z_phot[x])+'  '+str(z_prob[x])+'  '+str(chisq2[x])+'  '+str(round(logNIRc_SNR[x],4))+'   \n')
+		w.write(str(np.int(ids[x]))+'  '+str(z_spec[x])+'  '+str(z_phot[x])+'  '+str(z_prob[x])+'  '+str(chisq2[x])+'  '+str(round(NIRc_SNR_raw[x],4))+'   \n')
 	if (args.lephare_output_file):
-		w.write(str(np.int(ids[x]))+'  '+str(z_spec[x])+'  '+str(z_phot[x])+'  '+str(round(logNIRc_SNR[x],4))+'   \n')
+		w.write(str(np.int(ids[x]))+'  '+str(z_spec[x])+'  '+str(z_phot[x])+'  '+str(round(NIRc_SNR_raw[x],4))+'   \n')
 w.close()
 
 # # # # # # # # # # # # #
@@ -503,21 +541,30 @@ if (args.eazy_output_file):
 if (args.bpz_output_file):
 	residuals_SNR_5_highprob_lowchisq2 = (zspec_highSNR[high_probs_highSNR_indices][high_probs_highSNR_lowchisq2_indices] - zphot_highSNR[high_probs_highSNR_indices][high_probs_highSNR_lowchisq2_indices]) / (1 + zspec_highSNR[high_probs_highSNR_indices][high_probs_highSNR_lowchisq2_indices])
 	
-	residual_mean_SNR_5_highprob_lowchisq2 = np.mean(residuals_SNR_5_highprob_lowchisq2)
-	residual_std_SNR_5_highprob_lowchisq2 = np.std(residuals_SNR_5_highprob_lowchisq2)
-	residual_68_value_SNR_5_highprob_lowchisq2 = residuals_68(residuals_SNR_5_highprob_lowchisq2)
-	NMAD_SNR_5_highprob_lowchisq2 = 1.48 * astropy.stats.median_absolute_deviation(residuals_SNR_5_highprob_lowchisq2)
-	fraction_gt_15_SNR_5_highprob_lowchisq2 = len(np.where(abs(residuals_SNR_5_highprob_lowchisq2) > 0.15)[0])*1.0/len(abs(residuals_SNR_5_highprob_lowchisq2))*1.0
-	#skewness_SNR_5 = scipy.stats.skew(residuals_SNR_5)
-	
-	print ""+args.nircam_filter+"_SNR > "+str(args.snr_limit)+", HIGH PROBABILITY, LOW chisq2"+" (N = "+str(len(residuals_SNR_5_highprob_lowchisq2))+")"
-	print " bias = %.3f +/- %.3f" % (residual_mean_SNR_5_highprob_lowchisq2, residual_std_SNR_5_highprob_lowchisq2)
-	print " sigma_68 = %.3f" % (residual_68_value_SNR_5_highprob_lowchisq2)
-	print " NMAD = %.3f" % (NMAD_SNR_5_highprob_lowchisq2)
-	print " fraction (> 0.15) = %.3f" % (fraction_gt_15_SNR_5_highprob_lowchisq2)
-	#print " skewness = %.3f" % (skewness)
-	print "------------------------------------"
-
+	if (len(residuals_SNR_5_highprob_lowchisq2) > 0):
+		residual_mean_SNR_5_highprob_lowchisq2 = np.mean(residuals_SNR_5_highprob_lowchisq2)
+		residual_std_SNR_5_highprob_lowchisq2 = np.std(residuals_SNR_5_highprob_lowchisq2)
+		residual_68_value_SNR_5_highprob_lowchisq2 = residuals_68(residuals_SNR_5_highprob_lowchisq2)
+		NMAD_SNR_5_highprob_lowchisq2 = 1.48 * astropy.stats.median_absolute_deviation(residuals_SNR_5_highprob_lowchisq2)
+		fraction_gt_15_SNR_5_highprob_lowchisq2 = len(np.where(abs(residuals_SNR_5_highprob_lowchisq2) > 0.15)[0])*1.0/len(abs(residuals_SNR_5_highprob_lowchisq2))*1.0
+		#skewness_SNR_5 = scipy.stats.skew(residuals_SNR_5)
+		
+		print ""+args.nircam_filter+"_SNR > "+str(args.snr_limit)+", HIGH PROBABILITY, LOW chisq2"+" (N = "+str(len(residuals_SNR_5_highprob_lowchisq2))+")"
+		print " bias = %.3f +/- %.3f" % (residual_mean_SNR_5_highprob_lowchisq2, residual_std_SNR_5_highprob_lowchisq2)
+		print " sigma_68 = %.3f" % (residual_68_value_SNR_5_highprob_lowchisq2)
+		print " NMAD = %.3f" % (NMAD_SNR_5_highprob_lowchisq2)
+		print " fraction (> 0.15) = %.3f" % (fraction_gt_15_SNR_5_highprob_lowchisq2)
+		#print " skewness = %.3f" % (skewness)
+		print "------------------------------------"
+	else:
+		print ""+args.nircam_filter+"_SNR > "+str(args.snr_limit)+", HIGH PROBABILITY, LOW chisq2"+" (N = "+str(len(residuals_SNR_5_highprob_lowchisq2))+")"
+		print " bias = N/A +/- N/A" 
+		print " sigma_68 = N/A"
+		print " NMAD = N/A" 
+		print " fraction (> 0.15) = N/A" 
+		#print " skewness = %.3f" % (skewness)
+		print "------------------------------------"
+		
 
 
 # # # # # # # # # # # # # #
@@ -736,6 +783,14 @@ if (args.make_plots):
 	name = output_folder+'/outlier_fraction_z_SNR_'+str(SNR_limit)+'_highprob.png'
 	outlier_fraction_vs_redshift(zspec_highSNR[high_probs_highSNR_indices], zphot_highSNR[high_probs_highSNR_indices], name, title_for_plot)
 
+	# Plot a histogram of Outlier Fraction for objects with a specific magnitude range
+	if (args.mag_min):
+		if (args.mag_max):
+			mag_objects = np.where((NIRc_mag > mag_min) & (NIRc_mag < mag_max))[0]
+			name = output_folder+'/error_distribution_'+str(mag_min)+'-'+str(mag_max)+'.png'
+			mag_error_histogram(zspec_highSNR[mag_objects], zphot_highSNR[mag_objects], mag_min, mag_max, name)
+	
+
 	if (args.eazy_output_file):
 		# Plot the Outlier Fraction as a function of redshift for the high SNR objects with high probability, with low q_z
 		name = output_folder+'/outlier_fraction_z_SNR_'+str(SNR_limit)+'_highprob_lowqz.png'
@@ -746,6 +801,22 @@ if (args.make_plots):
 		name = output_folder+'/outlier_fraction_z_SNR_'+str(SNR_limit)+'_highprob_lowqchisq2.png'
 		outlier_fraction_vs_redshift(zspec_highSNR[high_probs_highSNR_indices][high_probs_highSNR_lowchisq2_indices], zphot_highSNR[high_probs_highSNR_indices][high_probs_highSNR_lowchisq2_indices], name, title_for_plot)
 
+	# Plot Point Density Plots
+	if (args.pointdensity):
+		colorlabel = 'Number of Points'
+		name = output_folder+'/z_phot_vs_z_spec_density.png'
+		photz_specz_density(z_spec, z_phot, name, args.nircam_filter, title_for_plot, min_redshift, max_redshift, colorlabel)
+		name = output_folder+'/z_phot_vs_z_spec_SNR_'+str(SNR_limit)+'_density.png'
+		photz_specz_density(zspec_highSNR, zphot_highSNR, name, args.nircam_filter, title_for_plot, min_redshift, max_redshift, colorlabel)
+		name = output_folder+'/z_phot_vs_z_spec_SNR_'+str(SNR_limit)+'_highprob_density.png'
+		photz_specz_density(zspec_highSNR[high_probs_highSNR_indices], zphot_highSNR[high_probs_highSNR_indices], name, args.nircam_filter, title_for_plot, min_redshift, max_redshift, colorlabel)
+		if (args.eazy_output_file):
+			name = output_folder+'/z_phot_vs_z_spec_SNR_'+str(SNR_limit)+'_highprob_lowqz_density.png'
+			photz_specz_density(zspec_highSNR[high_probs_highSNR_indices][high_probs_highSNR_lowqz_indices], zphot_highSNR[high_probs_highSNR_indices][high_probs_highSNR_lowqz_indices], name, args.nircam_filter, title_for_plot, min_redshift, max_redshift, colorlabel)
+		if (args.bpz_output_file):
+			name = output_folder+'/z_phot_vs_z_spec_SNR_'+str(SNR_limit)+'_highprob_lowchisq2_density.png'
+			photz_specz_density(zspec_highSNR[high_probs_highSNR_indices][high_probs_highSNR_lowchisq2_indices], zphot_highSNR[high_probs_highSNR_indices][high_probs_highSNR_lowchisq2_indices], name, args.nircam_filter, title_for_plot, min_redshift, max_redshift, colorlabel)
+	
 
 # Unused
 	#name = output_folder+'/z_phot_vs_z_spec_SNR_'+str(SNR_limit)+'.png'

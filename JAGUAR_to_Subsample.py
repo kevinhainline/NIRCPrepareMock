@@ -69,6 +69,16 @@ parser.add_argument(
   required=False
 )
 
+# ID Output Filename
+parser.add_argument(
+  '-iIDf','--inputIDfilename',
+  help= "Filename when using an ID numbers file?",
+  action="store",
+  type=str,
+  dest="inputIDfilename",
+  required=False
+)
+
 # Randomize IDs?
 parser.add_argument(
   '-rid','--randomizeids',
@@ -164,7 +174,10 @@ if (args.inputIDs):
 	input_ID_numbers = id_file[:]
 	n_input_ID_numbers = len(input_ID_numbers)
 	
-	id_filenameroot = 'ID_output_list'
+	if (args.inputIDfilename):
+		id_filenameroot = args.inputIDfilename
+	else:
+		id_filenameroot = 'ID_output_list'
 	use_IDs = 1
 	make_sf = 0
 	make_q = 0
@@ -273,8 +286,8 @@ if (use_IDs == 1):
 			object_re_maj = full_sf_re_maj[object_index]
 			object_sersic_n = full_sf_sersic_n[object_index]
 			object_fluxes = np.zeros(number_filters)
-			for j in range(0, number_filters):
-				object_fluxes[j] = sf_filt_flux[object_index][j]
+			for z in range(0, number_filters):
+				object_fluxes[z] = sf_filt_flux[z][object_index]
 		else:
 			object_ID = input_ID_numbers[j]
 			object_index = np.where(full_q_IDs == object_ID)[0][0]
@@ -282,13 +295,13 @@ if (use_IDs == 1):
 			object_logmass = full_q_logmass[object_index]
 			object_re_maj = full_q_re_maj[object_index]
 			object_sersic_n = full_q_sersic_n[object_index]
-			for j in range(0, number_filters):
-				object_fluxes[j] = q_filt_flux[object_index][j]
+			for z in range(0, number_filters):
+				object_fluxes[z] = q_filt_flux[z][object_index]
 
 		idfile.write(str(object_ID)+' '+str(object_redshifts)+' '+str(object_logmass)
 					+' '+str(object_re_maj)+' '+str(object_sersic_n)+' ')
-		for j in range(0, number_filters):
-			idfile.write(str(object_fluxes[j])+' ')
+		for z in range(0, number_filters):
+			idfile.write(str(object_fluxes[z])+' ')
 		idfile.write(' \n')
 		
 	idfile.close()

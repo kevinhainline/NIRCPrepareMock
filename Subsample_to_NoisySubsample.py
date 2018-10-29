@@ -274,6 +274,8 @@ for x in range(0, n_objects):
 			final_filters = np.append(final_filters, ['HST_F435W'])
 			filter_found = 1
 			flux_value = apparent_flux[j][x]
+			if (flux_value < 0):
+				flux_value = 0
 			pixel_area = 3.14159265 * ap_radius * ap_radius / (pixel_size[filter_index] * pixel_size[filter_index])
 			filt_bkgnd = pixel_area * bkgnd_nJy[filter_index]
 			flux = ap_corr * flux_value + filt_bkgnd
@@ -300,6 +302,8 @@ for x in range(0, n_objects):
 			final_filters = np.append(final_filters, ['HST_F606W'])
 			filter_found = 1
 			flux_value = apparent_flux[j][x]
+			if (flux_value < 0):
+				flux_value = 0
 			pixel_area = 3.14159265 * ap_radius * ap_radius / (pixel_size[filter_index] * pixel_size[filter_index])
 			filt_bkgnd = pixel_area * bkgnd_nJy[filter_index]
 			flux = ap_corr * flux_value + filt_bkgnd
@@ -314,7 +318,7 @@ for x in range(0, n_objects):
 				flux  = ap_corr * flux_value + ftemp
 				sum_flux = sum_flux + flux
 				sum_flux2 = sum_flux2 + (flux * flux)
-
+	
 			filter_flux_value = sum_flux / n_exposures[filter_index]
 			filter_sig_value = (sum_flux2 - (sum_flux * sum_flux)/n_exposures[filter_index])/(n_exposures[filter_index]-1)
 			filter_sig_value = np.sqrt(filter_sig_value / n_exposures[filter_index])
@@ -326,13 +330,15 @@ for x in range(0, n_objects):
 			final_filters = np.append(final_filters, ['HST_F775W'])
 			filter_found = 1
 			flux_value = apparent_flux[j][x]
+			if (flux_value < 0):
+				flux_value = 0
 			pixel_area = 3.14159265 * ap_radius * ap_radius / (pixel_size[filter_index] * pixel_size[filter_index])
 			filt_bkgnd = pixel_area * bkgnd_nJy[filter_index]
 			flux = ap_corr * flux_value + filt_bkgnd
 			ftemp = flux * e_sec_nJy[filter_index]
 			ferror = np.sqrt(ftemp * time[filter_index] + (read_noise[filter_index]*pixel_area)*(read_noise[filter_index]))							
 			ferror = ferror / (e_sec_nJy[filter_index] * time[filter_index])
-			
+				
 			sum_flux = 0.0
 			sum_flux2 = 0.0
 			for k in range(0, n_exposures[filter_index]):
@@ -340,7 +346,7 @@ for x in range(0, n_objects):
 				flux  = ap_corr * flux_value + ftemp
 				sum_flux = sum_flux + flux
 				sum_flux2 = sum_flux2 + (flux * flux)
-
+	
 			filter_flux_value = sum_flux / n_exposures[filter_index]
 			filter_sig_value = (sum_flux2 - (sum_flux * sum_flux)/n_exposures[filter_index])/(n_exposures[filter_index]-1)
 			filter_sig_value = np.sqrt(filter_sig_value / n_exposures[filter_index])
@@ -352,13 +358,15 @@ for x in range(0, n_objects):
 			final_filters = np.append(final_filters, ['HST_F814W'])
 			filter_found = 1
 			flux_value = apparent_flux[j][x]
+			if (flux_value < 0):
+				flux_value = 0
 			pixel_area = 3.14159265 * ap_radius * ap_radius / (pixel_size[filter_index] * pixel_size[filter_index])
 			filt_bkgnd = pixel_area * bkgnd_nJy[filter_index]
 			flux = ap_corr * flux_value + filt_bkgnd
 			ftemp = flux * e_sec_nJy[filter_index]
 			ferror = np.sqrt(ftemp * time[filter_index] + (read_noise[filter_index]*pixel_area)*(read_noise[filter_index]))							
 			ferror = ferror / (e_sec_nJy[filter_index] * time[filter_index])
-			
+				
 			sum_flux = 0.0
 			sum_flux2 = 0.0
 			for k in range(0, n_exposures[filter_index]):
@@ -366,7 +374,7 @@ for x in range(0, n_objects):
 				flux  = ap_corr * flux_value + ftemp
 				sum_flux = sum_flux + flux
 				sum_flux2 = sum_flux2 + (flux * flux)
-
+	
 			filter_flux_value = sum_flux / n_exposures[filter_index]
 			filter_sig_value = (sum_flux2 - (sum_flux * sum_flux)/n_exposures[filter_index])/(n_exposures[filter_index]-1)
 			filter_sig_value = np.sqrt(filter_sig_value / n_exposures[filter_index])
@@ -378,13 +386,15 @@ for x in range(0, n_objects):
 			final_filters = np.append(final_filters, ['HST_F850LP'])
 			filter_found = 1
 			flux_value = apparent_flux[j][x]
+			if (flux_value < 0):
+				flux_value = 0
 			pixel_area = 3.14159265 * ap_radius * ap_radius / (pixel_size[filter_index] * pixel_size[filter_index])
 			filt_bkgnd = pixel_area * bkgnd_nJy[filter_index]
 			flux = ap_corr * flux_value + filt_bkgnd
 			ftemp = flux * e_sec_nJy[filter_index]
 			ferror = np.sqrt(ftemp * time[filter_index] + (read_noise[filter_index]*pixel_area)*(read_noise[filter_index]))							
 			ferror = ferror / (e_sec_nJy[filter_index] * time[filter_index])
-			
+				
 			sum_flux = 0.0
 			sum_flux2 = 0.0
 			for k in range(0, n_exposures[filter_index]):
@@ -392,7 +402,7 @@ for x in range(0, n_objects):
 				flux  = ap_corr * flux_value + ftemp
 				sum_flux = sum_flux + flux
 				sum_flux2 = sum_flux2 + (flux * flux)
-
+	
 			filter_flux_value = sum_flux / n_exposures[filter_index]
 			filter_sig_value = (sum_flux2 - (sum_flux * sum_flux)/n_exposures[filter_index])/(n_exposures[filter_index]-1)
 			filter_sig_value = np.sqrt(filter_sig_value / n_exposures[filter_index])
@@ -406,13 +416,15 @@ for x in range(0, n_objects):
 				final_filters = np.append(final_filters, ['NRC_F070W'])
 				filter_found = 1
 				flux_value = apparent_flux[j][x]
+				if (flux_value < 0):
+					flux_value = 0
 				pixel_area = 3.14159265 * ap_radius * ap_radius / (pixel_size[filter_index] * pixel_size[filter_index])
 				filt_bkgnd = pixel_area * bkgnd_nJy[filter_index]
 				flux = ap_corr * flux_value + filt_bkgnd
 				ftemp = flux * e_sec_nJy[filter_index]
 				ferror = np.sqrt(ftemp * time[filter_index] + (read_noise[filter_index]*pixel_area)*(read_noise[filter_index]))							
 				ferror = ferror / (e_sec_nJy[filter_index] * time[filter_index])
-				
+					
 				sum_flux = 0.0
 				sum_flux2 = 0.0
 				for k in range(0, n_exposures[filter_index]):
@@ -420,7 +432,7 @@ for x in range(0, n_objects):
 					flux  = ap_corr * flux_value + ftemp
 					sum_flux = sum_flux + flux
 					sum_flux2 = sum_flux2 + (flux * flux)
-	
+		
 				filter_flux_value = sum_flux / n_exposures[filter_index]
 				filter_sig_value = (sum_flux2 - (sum_flux * sum_flux)/n_exposures[filter_index])/(n_exposures[filter_index]-1)
 				filter_sig_value = np.sqrt(filter_sig_value / n_exposures[filter_index])
@@ -436,6 +448,8 @@ for x in range(0, n_objects):
 			final_filters = np.append(final_filters, ['NRC_F090W'])
 			filter_found = 1
 			flux_value = apparent_flux[j][x]
+			if (flux_value < 0):
+				flux_value = 0
 			pixel_area = 3.14159265 * ap_radius * ap_radius / (pixel_size[filter_index] * pixel_size[filter_index])
 			filt_bkgnd = pixel_area * bkgnd_nJy[filter_index]
 			flux = ap_corr * flux_value + filt_bkgnd
@@ -450,7 +464,7 @@ for x in range(0, n_objects):
 				flux  = ap_corr * flux_value + ftemp
 				sum_flux = sum_flux + flux
 				sum_flux2 = sum_flux2 + (flux * flux)
-
+	
 			filter_flux_value = sum_flux / n_exposures[filter_index]
 			filter_sig_value = (sum_flux2 - (sum_flux * sum_flux)/n_exposures[filter_index])/(n_exposures[filter_index]-1)
 			filter_sig_value = np.sqrt(filter_sig_value / n_exposures[filter_index])
@@ -463,6 +477,8 @@ for x in range(0, n_objects):
 			final_filters = np.append(final_filters, ['NRC_F115W'])
 			filter_found = 1
 			flux_value = apparent_flux[j][x]
+			if (flux_value < 0):
+				flux_value = 0
 			pixel_area = 3.14159265 * ap_radius * ap_radius / (pixel_size[filter_index] * pixel_size[filter_index])
 			filt_bkgnd = pixel_area * bkgnd_nJy[filter_index]
 			flux = ap_corr * flux_value + filt_bkgnd
@@ -477,7 +493,7 @@ for x in range(0, n_objects):
 				flux  = ap_corr * flux_value + ftemp
 				sum_flux = sum_flux + flux
 				sum_flux2 = sum_flux2 + (flux * flux)
-
+	
 			filter_flux_value = sum_flux / n_exposures[filter_index]
 			filter_sig_value = (sum_flux2 - (sum_flux * sum_flux)/n_exposures[filter_index])/(n_exposures[filter_index]-1)
 			filter_sig_value = np.sqrt(filter_sig_value / n_exposures[filter_index])
@@ -489,6 +505,8 @@ for x in range(0, n_objects):
 			final_filters = np.append(final_filters, ['NRC_F150W'])
 			filter_found = 1
 			flux_value = apparent_flux[j][x]
+			if (flux_value < 0):
+				flux_value = 0
 			pixel_area = 3.14159265 * ap_radius * ap_radius / (pixel_size[filter_index] * pixel_size[filter_index])
 			filt_bkgnd = pixel_area * bkgnd_nJy[filter_index]
 			flux = ap_corr * flux_value + filt_bkgnd
@@ -503,7 +521,7 @@ for x in range(0, n_objects):
 				flux  = ap_corr * flux_value + ftemp
 				sum_flux = sum_flux + flux
 				sum_flux2 = sum_flux2 + (flux * flux)
-
+	
 			filter_flux_value = sum_flux / n_exposures[filter_index]
 			filter_sig_value = (sum_flux2 - (sum_flux * sum_flux)/n_exposures[filter_index])/(n_exposures[filter_index]-1)
 			filter_sig_value = np.sqrt(filter_sig_value / n_exposures[filter_index])
@@ -515,13 +533,15 @@ for x in range(0, n_objects):
 			final_filters = np.append(final_filters, ['NRC_F200W'])
 			filter_found = 1
 			flux_value = apparent_flux[j][x]
+			if (flux_value < 0):
+				flux_value = 0
 			pixel_area = 3.14159265 * ap_radius * ap_radius / (pixel_size[filter_index] * pixel_size[filter_index])
 			filt_bkgnd = pixel_area * bkgnd_nJy[filter_index]
 			flux = ap_corr * flux_value + filt_bkgnd
 			ftemp = flux * e_sec_nJy[filter_index]
 			ferror = np.sqrt(ftemp * time[filter_index] + (read_noise[filter_index]*pixel_area)*(read_noise[filter_index]))							
 			ferror = ferror / (e_sec_nJy[filter_index] * time[filter_index])
-			
+				
 			sum_flux = 0.0
 			sum_flux2 = 0.0
 			for k in range(0, n_exposures[filter_index]):
@@ -529,7 +549,7 @@ for x in range(0, n_objects):
 				flux  = ap_corr * flux_value + ftemp
 				sum_flux = sum_flux + flux
 				sum_flux2 = sum_flux2 + (flux * flux)
-
+	
 			filter_flux_value = sum_flux / n_exposures[filter_index]
 			filter_sig_value = (sum_flux2 - (sum_flux * sum_flux)/n_exposures[filter_index])/(n_exposures[filter_index]-1)
 			filter_sig_value = np.sqrt(filter_sig_value / n_exposures[filter_index])
@@ -541,13 +561,15 @@ for x in range(0, n_objects):
 			final_filters = np.append(final_filters, ['NRC_F277W'])
 			filter_found = 1
 			flux_value = apparent_flux[j][x]
+			if (flux_value < 0):
+				flux_value = 0
 			pixel_area = 3.14159265 * ap_radius * ap_radius / (pixel_size[filter_index] * pixel_size[filter_index])
 			filt_bkgnd = pixel_area * bkgnd_nJy[filter_index]
 			flux = ap_corr * flux_value + filt_bkgnd
 			ftemp = flux * e_sec_nJy[filter_index]
 			ferror = np.sqrt(ftemp * time[filter_index] + (read_noise[filter_index]*pixel_area)*(read_noise[filter_index]))							
 			ferror = ferror / (e_sec_nJy[filter_index] * time[filter_index])
-			
+				
 			sum_flux = 0.0
 			sum_flux2 = 0.0
 			for k in range(0, n_exposures[filter_index]):
@@ -555,7 +577,7 @@ for x in range(0, n_objects):
 				flux  = ap_corr * flux_value + ftemp
 				sum_flux = sum_flux + flux
 				sum_flux2 = sum_flux2 + (flux * flux)
-
+	
 			filter_flux_value = sum_flux / n_exposures[filter_index]
 			filter_sig_value = (sum_flux2 - (sum_flux * sum_flux)/n_exposures[filter_index])/(n_exposures[filter_index]-1)
 			filter_sig_value = np.sqrt(filter_sig_value / n_exposures[filter_index])
@@ -567,13 +589,15 @@ for x in range(0, n_objects):
 			final_filters = np.append(final_filters, ['NRC_F335M'])
 			filter_found = 1
 			flux_value = apparent_flux[j][x]
+			if (flux_value < 0):
+				flux_value = 0
 			pixel_area = 3.14159265 * ap_radius * ap_radius / (pixel_size[filter_index] * pixel_size[filter_index])
 			filt_bkgnd = pixel_area * bkgnd_nJy[filter_index]
 			flux = ap_corr * flux_value + filt_bkgnd
 			ftemp = flux * e_sec_nJy[filter_index]
 			ferror = np.sqrt(ftemp * time[filter_index] + (read_noise[filter_index]*pixel_area)*(read_noise[filter_index]))							
 			ferror = ferror / (e_sec_nJy[filter_index] * time[filter_index])
-			
+				
 			sum_flux = 0.0
 			sum_flux2 = 0.0
 			for k in range(0, n_exposures[filter_index]):
@@ -581,7 +605,7 @@ for x in range(0, n_objects):
 				flux  = ap_corr * flux_value + ftemp
 				sum_flux = sum_flux + flux
 				sum_flux2 = sum_flux2 + (flux * flux)
-
+	
 			filter_flux_value = sum_flux / n_exposures[filter_index]
 			filter_sig_value = (sum_flux2 - (sum_flux * sum_flux)/n_exposures[filter_index])/(n_exposures[filter_index]-1)
 			filter_sig_value = np.sqrt(filter_sig_value / n_exposures[filter_index])
@@ -593,6 +617,8 @@ for x in range(0, n_objects):
 			final_filters = np.append(final_filters, ['NRC_F356W'])
 			filter_found = 1
 			flux_value = apparent_flux[j][x]
+			if (flux_value < 0):
+				flux_value = 0
 			pixel_area = 3.14159265 * ap_radius * ap_radius / (pixel_size[filter_index] * pixel_size[filter_index])
 			filt_bkgnd = pixel_area * bkgnd_nJy[filter_index]
 			flux = ap_corr * flux_value + filt_bkgnd
@@ -619,13 +645,15 @@ for x in range(0, n_objects):
 			final_filters = np.append(final_filters, ['NRC_F410M'])
 			filter_found = 1
 			flux_value = apparent_flux[j][x]
+			if (flux_value < 0):
+				flux_value = 0
 			pixel_area = 3.14159265 * ap_radius * ap_radius / (pixel_size[filter_index] * pixel_size[filter_index])
 			filt_bkgnd = pixel_area * bkgnd_nJy[filter_index]
 			flux = ap_corr * flux_value + filt_bkgnd
 			ftemp = flux * e_sec_nJy[filter_index]
 			ferror = np.sqrt(ftemp * time[filter_index] + (read_noise[filter_index]*pixel_area)*(read_noise[filter_index]))							
 			ferror = ferror / (e_sec_nJy[filter_index] * time[filter_index])
-			
+				
 			sum_flux = 0.0
 			sum_flux2 = 0.0
 			for k in range(0, n_exposures[filter_index]):
@@ -633,7 +661,7 @@ for x in range(0, n_objects):
 				flux  = ap_corr * flux_value + ftemp
 				sum_flux = sum_flux + flux
 				sum_flux2 = sum_flux2 + (flux * flux)
-
+	
 			filter_flux_value = sum_flux / n_exposures[filter_index]
 			filter_sig_value = (sum_flux2 - (sum_flux * sum_flux)/n_exposures[filter_index])/(n_exposures[filter_index]-1)
 			filter_sig_value = np.sqrt(filter_sig_value / n_exposures[filter_index])
@@ -645,13 +673,15 @@ for x in range(0, n_objects):
 			final_filters = np.append(final_filters, ['NRC_F444W'])
 			filter_found = 1
 			flux_value = apparent_flux[j][x]
+			if (flux_value < 0):
+				flux_value = 0
 			pixel_area = 3.14159265 * ap_radius * ap_radius / (pixel_size[filter_index] * pixel_size[filter_index])
 			filt_bkgnd = pixel_area * bkgnd_nJy[filter_index]
 			flux = ap_corr * flux_value + filt_bkgnd
 			ftemp = flux * e_sec_nJy[filter_index]
 			ferror = np.sqrt(ftemp * time[filter_index] + (read_noise[filter_index]*pixel_area)*(read_noise[filter_index]))							
 			ferror = ferror / (e_sec_nJy[filter_index] * time[filter_index])
-			
+				
 			sum_flux = 0.0
 			sum_flux2 = 0.0
 			for k in range(0, n_exposures[filter_index]):
@@ -659,7 +689,7 @@ for x in range(0, n_objects):
 				flux  = ap_corr * flux_value + ftemp
 				sum_flux = sum_flux + flux
 				sum_flux2 = sum_flux2 + (flux * flux)
-
+	
 			filter_flux_value = sum_flux / n_exposures[filter_index]
 			filter_sig_value = (sum_flux2 - (sum_flux * sum_flux)/n_exposures[filter_index])/(n_exposures[filter_index]-1)
 			filter_sig_value = np.sqrt(filter_sig_value / n_exposures[filter_index])

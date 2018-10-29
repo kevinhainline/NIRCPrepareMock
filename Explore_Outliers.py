@@ -276,7 +276,7 @@ else:
 	
 # Setting the limit on the SNR 
 SNR_limit = args.snr_limit
-log_SNR_limit = math.log10(SNR_limit)
+#log_SNR_limit = math.log10(SNR_limit)
 
 # Let's open up the full SF catalog
 full_sf_mock_file = args.jaguar_path+'JADES_SF_mock_'+JAGUAR_version+'.fits'
@@ -386,8 +386,11 @@ if (args.eazy_output_file):
 	z_phot = output_zs[:,2]
 	z_prob = output_zs[:,3]
 	q_z = output_zs[:,4]
-	logNIRc_SNR = output_zs[:,5]
+	NIRc_SNR = output_zs[:,5]
 	title_for_plot = 'EAZY Results'
+	logNIRc_SNR = NIRc_SNR
+	logNIRc_SNR[np.where(NIRc_SNR <= 0)[0]] = 1e-5
+	logNIRc_SNR = np.log10(logNIRc_SNR)
 	
 # Le Phare
 if (args.lephare_output_file):
@@ -398,7 +401,10 @@ if (args.lephare_output_file):
 	z_spec = output_zs[:,1]
 	z_phot = output_zs[:,2]
 	z_prob = output_zs[:,3]
-	logNIRc_SNR = output_zs[:,4]
+	NIRc_SNR = output_zs[:,4]
+	logNIRc_SNR = NIRc_SNR
+	logNIRc_SNR[np.where(NIRc_SNR <= 0)[0]] = 1e-5
+	logNIRc_SNR = np.log10(logNIRc_SNR)
 
 	title_for_plot = 'Le Phare Results'
 
@@ -415,31 +421,34 @@ if (args.bpz_output_file):
 	z_phot = output_zs[:,2]
 	z_prob = output_zs[:,3]
 	chisq2 = output_zs[:,4]
-	logNIRc_SNR = output_zs[:,5]
+	NIRc_SNR = output_zs[:,5]
+	logNIRc_SNR = NIRc_SNR
+	logNIRc_SNR[np.where(NIRc_SNR <= 0)[0]] = 1e-5
+	logNIRc_SNR = np.log10(logNIRc_SNR)
 
 	title_for_plot = 'BPZ Results'
 
 # Get High SNR Objects
-high_SNR_indices = np.where(logNIRc_SNR >= log_SNR_limit)[0]
-high_SNR_high_prob_indices = np.where((logNIRc_SNR >= log_SNR_limit) & (z_prob > prob_limit))[0]
+high_SNR_indices = np.where(NIRc_SNR >= SNR_limit)[0]
+high_SNR_high_prob_indices = np.where((NIRc_SNR >= SNR_limit) & (z_prob > prob_limit))[0]
 if (args.eazy_output_file):
-	high_SNR_high_prob_lowq_z_indices = np.where((logNIRc_SNR >= log_SNR_limit) & (z_prob > prob_limit) & (q_z <= q_z_limit))[0]
+	high_SNR_high_prob_lowq_z_indices = np.where((NIRc_SNR >= SNR_limit) & (z_prob > prob_limit) & (q_z <= q_z_limit))[0]
 if (args.bpz_output_file):
-	high_SNR_high_prob_lowchisq2_indices = np.where((logNIRc_SNR >= log_SNR_limit) & (z_prob > prob_limit) & (chisq2 <= chisq2_limit))[0]
+	high_SNR_high_prob_lowchisq2_indices = np.where((NIRc_SNR >= SNR_limit) & (z_prob > prob_limit) & (chisq2 <= chisq2_limit))[0]
 
 # High SNR 
 high_SNR_outlier_IDs, high_SNR_outlier_zspec, high_SNR_outlier_zphot = find_catastrophic_outliers(ids[high_SNR_indices], z_spec[high_SNR_indices], z_phot[high_SNR_indices], 0.15)
 high_SNR_outlier_indices = np.zeros(len(high_SNR_outlier_IDs), dtype = 'int')
 for k in range(0,len(high_SNR_outlier_IDs)):
 	high_SNR_outlier_indices[k] = np.where(ids == high_SNR_outlier_IDs[k])[0][0]
-high_SNR_outlier_logNIRc_SNR = logNIRc_SNR[high_SNR_outlier_indices]
+high_SNR_outlier_NIRc_SNR = NIRc_SNR[high_SNR_outlier_indices]
 
 # High SNR, High Probability
 high_SNR_high_prob_outlier_IDs, high_SNR_high_prob_outlier_zspec, high_SNR_high_prob_outlier_zphot = find_catastrophic_outliers(ids[high_SNR_high_prob_indices], z_spec[high_SNR_high_prob_indices], z_phot[high_SNR_high_prob_indices], 0.15)
 high_SNR_high_prob_outlier_indices = np.zeros(len(high_SNR_high_prob_outlier_IDs), dtype = 'int')
 for k in range(0,len(high_SNR_high_prob_outlier_IDs)):
 	high_SNR_high_prob_outlier_indices[k] = np.where(ids == high_SNR_high_prob_outlier_IDs[k])[0][0]
-high_SNR_high_prob_outlier_logNIRc_SNR = logNIRc_SNR[high_SNR_high_prob_outlier_indices]
+high_SNR_high_prob_outlier_NIRc_SNR = NIRc_SNR[high_SNR_high_prob_outlier_indices]
 high_SNR_high_prob_outlier_IDs = ids[high_SNR_high_prob_outlier_indices]
 
 if (args.eazy_output_file):

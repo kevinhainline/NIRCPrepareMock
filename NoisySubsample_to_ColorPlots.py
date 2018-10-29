@@ -80,7 +80,6 @@ parser.add_argument(
   required=True
 )
 
-
 # X Axis, Filter 1
 parser.add_argument(
   '-xf1','--xfilter1',
@@ -175,6 +174,26 @@ parser.add_argument(
   required=False
 )
 
+# Y Intercept Value
+parser.add_argument(
+  '-yint','--yint_value',
+  help="Y-Intercept on the Selection Line?",
+  action="store",
+  type=float,
+  dest="yint_value",
+  required=False
+)
+
+# SNR Limit? 
+parser.add_argument(
+  '-snr','--snr',
+  help="Filter SNR (default = 3.0)",
+  action="store",
+  type=float,
+  dest="snr",
+  required=False
+)
+
 # Plot to Screen? 
 parser.add_argument(
   '-ps','--plot_to_screen',
@@ -211,7 +230,6 @@ if (args.input_file.endswith('.fits')):
 	number_objects = ID_values.size
 
 
-
 if (args.id_number_list):
 	correct_object_indices = np.zeros(number_input_objects, dtype = int)
 	for z in range(0, number_input_objects):
@@ -236,7 +254,11 @@ y_filter_flux_two_snr = y_filter_flux_two / y_filter_flux_two_err
 x_filter_flux_one_snr = x_filter_flux_one / x_filter_flux_one_err
 x_filter_flux_two_snr = x_filter_flux_two / x_filter_flux_two_err
 
-snr_limit = 5.0
+if (args.snr):
+	snr_limit = args.snr
+else:
+	snr_limit = 3.0
+
 SNR_check_objects = np.where((y_filter_flux_two_snr > snr_limit) & (x_filter_flux_one_snr > snr_limit) & (x_filter_flux_two_snr > snr_limit))[0]
 
 #print np.sort(y_filter_flux_one_snr)
@@ -277,7 +299,10 @@ high_z_objects_i = np.where(redshifts[correct_object_indices][SNR_check_objects]
 print 'There are '+str(len(high_z_objects_i))+' objects at z > '+str(args.zlimit)
 
 # Selection Lines
-selection_limit = np.arange(0.1, 2.8, 0.2)#np.arange(0.5, 3.2, 0.2)
+if (args.yint_value):
+	selection_limit = np.array([args.yint_value])
+else:
+	selection_limit = np.arange(0.1, 2.8, 0.2)#np.arange(0.5, 3.2, 0.2)
 n_selection_limit = len(selection_limit)
 selection_fraction = np.zeros(n_selection_limit)
 selection_fraction_err = np.zeros(n_selection_limit)
