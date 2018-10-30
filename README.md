@@ -10,7 +10,8 @@ low redshift, low mass objects). It's run with a variety of flags.
 ```
 usage: JAGUAR_to_Subsample.py [-h] -in INPUT_FOLDER [-iID INPUTIDS]
                               [-sfo SF_OUTPUT_FILENAME]
-                              [-qo Q_OUTPUT_FILENAME] [-rid RANDOMIZE_IDS]
+                              [-qo Q_OUTPUT_FILENAME] [-iIDf INPUTIDFILENAME]
+                              [-rid RANDOMIZE_IDS]
                               [-nz NUMBER_PER_REDSHIFT_BIN] [-fi FILTERS_FILE]
                               [-co COMBINE_FILENAME] [-mf]
 
@@ -24,6 +25,8 @@ optional arguments:
                         SF Output Filename
   -qo Q_OUTPUT_FILENAME, --qoutputfilename Q_OUTPUT_FILENAME
                         Q Output Filename
+  -iIDf INPUTIDFILENAME, --inputIDfilename INPUTIDFILENAME
+                        Filename when using an ID numbers file?
   -rid RANDOMIZE_IDS, --randomizeids RANDOMIZE_IDS
                         Randomize the ID Numbers? (1 = Yes, 0 = No)
   -nz NUMBER_PER_REDSHIFT_BIN, --nobjectsperz NUMBER_PER_REDSHIFT_BIN
@@ -54,6 +57,40 @@ It is also possible to supply a list of IDs to create a subsample, using the
 
 This will produce the file `ID_output_list.dat` (and a fits version if the `-mf` flag is
 set).
+
+### `JAGUAR_to_Region_Sample.py`
+This (optional) script takes in the mock catalogs from JAGUAR, along with a width and a
+height, and then produces a list of ID numbers for objects within some random region of
+that size within the 11'x11' JAGUAR input file. This is useful if you want to retain
+the number density of objects but want to focus on a smaller subregion.
+		
+```
+usage: JAGUAR_to_Region_Sample.py [-h] -in INPUT_FOLDER -width WIDTH -height
+                                  HEIGHT
+
+optional arguments:
+  -h, --help            show this help message and exit
+  -in INPUT_FOLDER, --inputfolder INPUT_FOLDER
+                        Input Folder With Mock Catalog Files
+  -width WIDTH          Width of subsample (in arcminutes, max 11')
+  -height HEIGHT        Height of subsample (in arcminutes, max 11')
+```
+
+Here is an example of the input:
+		
+`% python JAGUAR_to_Region_Sample.py -in /Path/To/Your/Mock_Catalog_Files/ -width 4.0 -height 4.0 > All_4.0_by_4.0_Objects.IDs.dat`
+
+In this example, the path to the mock catalog file is specified, and the code will
+then just pick a random region within the full JAGUAR catalog of the specified size,
+which will print to screen, so it's helpful to pipe this to a file, here called 
+`All_4.0_by_4.0_Objects.IDs.dat`
+
+You can then use these IDs to create the subsample with `JAGUAR_to_Subsample.py`, using the 
+`-iIDs` flag:
+
+`% python JAGUAR_to_Subsample.py -in /Path/To/Your/Mock_Catalog_Files/ -rid 0 -iID All_4.0_by_4.0_Objects.IDs.dat -fi filters.dat -mf`
+
+
 
 ### `Subsample_to_NoisySubsample.py`
 This script takes in the output files from `JAGUAR_to_Subsample.py` and then
@@ -94,9 +131,8 @@ This script takes in the output files from `Subsample_to_NoisySubsample.py` and
 prepares it for EAZY, BPZ, BEAGLE, Le Phare, or ZEBRA photometric redshift codes.
 		
 ```
-usage: NoisySubsample_to_PhotoZInput.py [-h] -in INPUT_FILE -fi FILTERS_FILE
-                                        [-out OUTPUT_NAME] [-beagle] [-eazy]
-                                        [-bpz] [-lep] [-zeb]
+usage: NoisySubsample_to_PhotoZInput.py [-h] -in INPUT_FILE [-out OUTPUT_NAME]
+                                        [-beagle] [-eazy] [-bpz] [-lep] [-zeb]
 
 optional arguments:
   -h, --help            show this help message and exit
@@ -114,6 +150,7 @@ optional arguments:
                         Make Le Phare file?
   -zeb, --zebra_input_file, --zebra
                         Make Zebra file?
+
 ```
 
 
@@ -344,3 +381,92 @@ y-axis, `NRC_F090W - NRC_F115W`, and on the x-axis, `NRC_F115W - NRC_F150W`. It 
 look at how these colors can be used to select galaxies at `z > 7.0` by exploring
 color cuts with a slope of 0.2, for those objects with SNR > 5.0 in `NRC_F115W` and `NRC_F150W`
 filters. Finally, it plots to the screen instead of saving a plot to disk. 
+
+
+
+### `JAGUAR_plot_SEDs.py`
+This script, which is found in the `More_In_Prep_Scripts` directory, allows you to plot
+SF or Q (or both) SEDs from the JAGUAR catalog.
+```
+usage: JAGUAR_plot_SEDs.py [-h] -in INPUT_FOLDER -sedin SED_INPUT_FOLDER
+                           [-SFID SF_ID] [-QID Q_ID]
+
+optional arguments:
+  -h, --help            show this help message and exit
+  -in INPUT_FOLDER, --inputfolder INPUT_FOLDER
+                        Input Folder With Mock Catalog Files
+  -sedin SED_INPUT_FOLDER, --sedinputfolder SED_INPUT_FOLDER
+                        Input Folder With Mock Catalog SED Files
+  -SFID SF_ID, --SFID SF_ID
+                        SF Object ID
+  -QID Q_ID, --QID Q_ID
+                        Q Object ID
+  -filt, --plot_filters
+                        Plot the Filters on Top of the Plot?
+```
+
+It would be perhaps run in this way:
+
+`% python JAGUAR_plot_SEDs.py -in /Path/To/Your/Mock_Catalog_Files/ -sedin /Path/To/Your/Mock_Catalog_SEDs/ -SFID 269865 -QID 309979 -filt`
+
+This would plot the SF object 269865 and the Q object 309979. You can specify one SF
+object or one Q object, or both, as in the example. Also, the `-filt` flag is set, which
+plots the HST and NIRCam filters on top of the SED. 
+
+
+### `NIRCam_Mock_Image_Cutouts.py`
+This program generates cutouts of objects or regions from the mock images, following the
+RGB color image method from Robert Lupton (http://adsabs.harvard.edu/abs/2004PASP..116..133L). 
+The user can specify whether they want a cross designating a specific object, or a scalebar,
+or whether or not they want to change the RGB color scaling on the images. This requires 
+astropy, as it uses the `make_lupton_rgb` function. 
+
+```
+usage: NIRCam_Mock_Image_Cutouts.py [-h] -in INPUT_FOLDER -image IMAGE_FOLDER
+                                    [-objid OBJID] [-ra CENTER_RA]
+                                    [-dec CENTER_DEC] [-rasize RASIZE]
+                                    [-decsize DECSIZE] [-rgb RGBLIST] [-cross]
+                                    [-info] [-filters]
+
+optional arguments:
+  -h, --help            show this help message and exit
+  -in INPUT_FOLDER, --inputfolder INPUT_FOLDER
+                        Input Folder With Mock Catalog Files (and images)
+  -image IMAGE_FOLDER, --imagefolder IMAGE_FOLDER
+                        (Optional) Alternate Image Folder
+  -objid OBJID, --objid OBJID
+                        Object ID
+  -ra CENTER_RA, --ra CENTER_RA
+                        Center RA of Box
+  -dec CENTER_DEC, --dec CENTER_DEC
+                        Center DEC of Box
+  -rasize RASIZE, --rasize RASIZE
+                        Width of Cutout in Arcseconds (Default = 5)
+  -decsize DECSIZE, --decsize DECSIZE
+                        Height of Cutout in Arcseconds (Default = 5)
+  -rgb RGBLIST, --rgblist RGBLIST
+                        RGB Color Scaling List, e.g. 1,1,1
+  -cross, --cross       Show crosshairs?
+  -info, --info         Show info on image?
+  -filters, --filters   Show filter names on image?
+```
+
+It would be perhaps run in this way:
+
+`% python NIRCam_Mock_Image_Cutouts.py -in /Path/To/Your/Mock_Catalog_Files/ -image /Path/To/Your/Mock_Catalog_Images/ -objid 280879 -rasize 10 -decsize 10 -rgb 0.7,1,1 -cross`
+
+Here, after pointing to where the input SF and Q mock catalog files are, and to where the
+images live on your machine, you can specify an Object ID (or an RA and a DEC), and a 
+size of the region you want the image to span. Here, I've also set it to put a cross 
+around the object, and I'm scaling the r-band image by 0.7. Sometimes,
+because the mock images do not span the entire JAGUAR catalog, the object you specify will
+not be found in the image, and the program will quit with an error.
+
+The images are hardwired in the code, if you want to change which filters are being used,
+you'll want to change lines 19-21. Right now, they're set to:
+
+```
+r_name = 'goods_s_F200W_2018_08_29.fits'
+g_name = 'goods_s_F115W_2018_08_29.fits'
+b_name = 'goods_s_F090W_2018_08_29.fits'
+```

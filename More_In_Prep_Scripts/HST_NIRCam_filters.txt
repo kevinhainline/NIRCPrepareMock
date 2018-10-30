@@ -1,0 +1,14 @@
+f435w plotting_filters/HST-ACS-wfc_F435W.dat
+f606w plotting_filters/HST-ACS-wfc_F606W.dat
+f775w plotting_filters/HST-ACS-wfc_F775W.dat
+f814w plotting_filters/HST-ACS-wfc_F814W.dat
+f850lp plotting_filters/HST-ACS-wfc_F850LP.dat
+F090W plotting_filters/F090W_NRConly_ModAB_mean.ang.txt
+F115W plotting_filters/F115W_NRConly_ModAB_mean.ang.txt
+F150W plotting_filters/F150W_NRConly_ModAB_mean.ang.txt
+F200W plotting_filters/F200W_NRConly_ModAB_mean.ang.txt
+F277W plotting_filters/F277W_NRConly_ModAB_mean.ang.txt
+F335M plotting_filters/F335M_NRConly_ModAB_mean.ang.txt
+F356W plotting_filters/F356W_NRConly_ModAB_mean.ang.txt
+F410M plotting_filters/F410M_NRConly_ModAB_mean.ang.txt
+F444W plotting_filters/F444W_NRConly_ModAB_mean.ang.txt

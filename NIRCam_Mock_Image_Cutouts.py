@@ -126,13 +126,13 @@ parser.add_argument(
 )
 
 # Show scale on the image? 
-parser.add_argument(
-  '-scale','--scale',
-  help="Show scale bar?",
-  action="store_true",
-  dest="show_scale",
-  required=False
-)
+#parser.add_argument(
+#  '-scale','--scale',
+#  help="Show scale bar?",
+#  action="store_true",
+#  dest="show_scale",
+#  required=False
+#)
 
 # Show info on image?
 parser.add_argument(
@@ -167,7 +167,6 @@ r_name = image_folder+r_name
 g_name = image_folder+g_name
 b_name = image_folder+b_name
 
-
 if (args.rasize):
 	rasize_value = np.float(args.rasize)
 else:
@@ -184,7 +183,6 @@ full_sf_IDs = sftestfits[1].data['ID']
 full_sf_RA = sftestfits[1].data['RA']
 full_sf_DEC = sftestfits[1].data['DEC']
 full_sf_redshifts = sftestfits[1].data['redshift']
-#full_sf_logmass = sftestfits[1].data['mStar']
 n_sf_objects = len(full_sf_redshifts)
 max_SF_ID = np.max(full_sf_IDs)
 
@@ -195,7 +193,6 @@ full_q_IDs = qtestfits[1].data['ID']
 full_q_RA = qtestfits[1].data['RA']
 full_q_DEC = qtestfits[1].data['DEC']
 full_q_redshifts = qtestfits[1].data['redshift']
-#full_q_logmass = qtestfits[1].data['mStar']
 n_q_objects = len(full_q_redshifts)
 
 # If the user wants to make a cutout of a specific object
@@ -227,7 +224,7 @@ cosdec_center = math.cos(objDEC * 3.141593 / 180.0)
 
 
 # Open the R band image
-r = fits.open(r_name)[0].data#/1.7
+r = fits.open(r_name)[0].data
 rhdu = fits.open(r_name)[0]
 rwcs = WCS(rhdu.header)
 
@@ -249,7 +246,7 @@ if (args.rgblist):
 	b = b*rgb_list[2]
 
 # Set the position of the object
-position = SkyCoord(str(objRA)+'d '+str(objDEC)+'d', frame='fk5')#SkyCoord('53.167321d -27.784982d', frame='fk5')
+position = SkyCoord(str(objRA)+'d '+str(objDEC)+'d', frame='fk5')
 
 # Make the cutout
 size = u.Quantity((decsize_value, rasize_value), u.arcsec)
@@ -275,18 +272,18 @@ if (args.show_crosshairs):
 	ax.plot([objRA - (closeness_to_object) * rasize_value/3600.0, objRA - (farposition_from_object) * rasize_value/3600.0],[objDEC, objDEC], transform=ax.get_transform('fk5'), color='white')
 
 # Add the scale bar 
-if (rasize_value < 8):
-	scale_bar_length = 1.0
-if (rasize_value >= 8):
-	scale_bar_length = 3.0
-if (rasize_value >= 60):
-	scale_bar_length = 30.0
-if (args.show_scale):
-	leftside_RA = (objRA+scale_bar_length/(2*3600)/cosdec_center)+(0.4)*(rasize_value/3600.0)
-	rightside_RA = (objRA-scale_bar_length/(2*3600)/cosdec_center)+(0.4)*(rasize_value/3600.0)
-	bar_average_RA = (leftside_RA + rightside_RA)/2.0
-	ax.plot([leftside_RA, rightside_RA],[objDEC + (0.4)*decsize_value/3600.0, objDEC + (0.4)*decsize_value/3600.0], transform=ax.get_transform('fk5'), color='white')
-	ax.text(bar_average_RA, objDEC + (0.43)*decsize_value/3600.0,str(scale_bar_length)+'\'\'', transform=ax.get_transform('fk5'), color='white', horizontalalignment='center')
+#if (rasize_value < 8):
+#	scale_bar_length = 1.0
+#if (rasize_value >= 8):
+#	scale_bar_length = 3.0
+#if (rasize_value >= 60):
+#	scale_bar_length = 30.0
+#if (args.show_scale):
+#	leftside_RA = (objRA+scale_bar_length/(2*3600)/cosdec_center)+(0.4)*(rasize_value/3600.0)
+#	rightside_RA = (objRA-scale_bar_length/(2*3600)/cosdec_center)+(0.4)*(rasize_value/3600.0)
+#	bar_average_RA = (leftside_RA + rightside_RA)/2.0
+#	ax.plot([leftside_RA, rightside_RA],[objDEC + (0.4)*decsize_value/3600.0, objDEC + (0.4)*decsize_value/3600.0], transform=ax.get_transform('fk5'), color='white')
+#	ax.text(bar_average_RA, objDEC + (0.43)*decsize_value/3600.0,str(scale_bar_length)+'\'\'', transform=ax.get_transform('fk5'), color='white', horizontalalignment='center')
 
 if (args.objid):
 
