@@ -190,11 +190,14 @@ an additional filter.
 ```
 usage: ComparePhotoZ_to_SpecZ.py [-h] -input INPUT_PHOTOMETRY -nrcf
                                  NIRCAM_FILTER -snrl SNR_LIMIT
+                                 [-outf OPT_OUTPUT_FOLDER]
                                  [-eazy EAZY_OUTPUT_FILE]
                                  [-bpz BPZ_OUTPUT_FILE]
                                  [-lep LEPHARE_OUTPUT_FILE]
                                  [-zeb ZEBRA_OUTPUT_FILE] [-minz MINIMUM_Z]
-                                 [-maxz MAXIMUM_Z] [-mp] [-jaguar JAGUAR_PATH]
+                                 [-maxz MAXIMUM_Z] [-magmin MAG_MIN]
+                                 [-magmax MAG_MAX] [-mp] [-outliers]
+                                 [-pointdensity] [-jaguar JAGUAR_PATH]
                                  [-jparam JAGUAR_PARAM]
 
 optional arguments:
@@ -219,15 +222,20 @@ optional arguments:
                         Minimum Redshift for Analysis
   -maxz MAXIMUM_Z, --maximum_z MAXIMUM_Z
                         Maximum Redshift for Analysis
+  -magmin MAG_MIN, --magmin MAG_MIN
+                        Minimum Mag for Error Histogram
+  -magmax MAG_MAX, --magmax MAG_MAX
+                        Maximum Mag for Error Histogram
   -mp, --make_plots     Make Plots?
   -outliers             Calculate Catastrophic Outliers?
+  -pointdensity         Make Point Density Plots?
   -jaguar JAGUAR_PATH, --jaguar_path JAGUAR_PATH
                         Path to JAGUAR Catalogs?
   -jparam JAGUAR_PARAM, --jaguar_param JAGUAR_PARAM
                         JAGUAR Parameter for Coloring Plots?
 ```
 
-`% python ComparePhotoZ_to_SpecZ.py -input /Path/To/Input/Noisy/Photometry/all_fluxes_5_1_18_noisy.dat -nrcf NRC_F200W -snrl 5 -eazy /Path/To/EAZY/output/photz.zout -jaguar /Path/To/Your/Mock_Catalog_Files/ -jparam sSFR -mp -outliers  -outf /Path/To/Optional/Output/Folder/`
+`% python ComparePhotoZ_to_SpecZ.py -input /Path/To/Input/Noisy/Photometry/all_fluxes_5_1_18_noisy.dat -nrcf NRC_F200W -snrl 5 -eazy /Path/To/EAZY/output/photz.zout -jaguar /Path/To/Your/Mock_Catalog_Files/ -jparam sSFR -mp -outliers -outf /Path/To/Optional/Output/Folder/`
 
 In this example, we point to the full set of noisy photometry from `Subsample_to_NoisySubsample.py`, and
 then I specify the SNR filter, and the SNR level, for files that cut down on noisy, low
@@ -242,33 +250,42 @@ The statistics that are produced are:
 
 ```
 ------------------------------------
-ALL OBJECTS
- bias = 0.033 +/- 1.012
- sigma_68 = 0.046
- NMAD = 0.031
- fraction (> 0.15) = 0.166
+ALL OBJECTS (N = 117763)
+ bias = -0.000 +/- 1.048
+ sigma_68 = 0.118
+ NMAD = 0.071
+ fraction (> 0.15) = 0.273
 ------------------------------------
-NRC_F200W_SNR > 5.0
- bias = 0.002 +/- 0.167
- sigma_68 = 0.024
- NMAD = 0.021
- fraction (> 0.15) = 0.038
+NRC_F200W_SNR > 5.0 (N = 71757)
+ bias = 0.009 +/- 0.231
+ sigma_68 = 0.048
+ NMAD = 0.037
+ fraction (> 0.15) = 0.110
 ------------------------------------
-NRC_F200W_SNR > 5.0, HIGH PROBABILITY
- bias = 0.005 +/- 0.085
- sigma_68 = 0.023
- NMAD = 0.020
- fraction (> 0.15) = 0.025
+NRC_F200W_SNR > 5.0, HIGH PROBABILITY (N = 58825)
+ bias = 0.012 +/- 0.127
+ sigma_68 = 0.041
+ NMAD = 0.033
+ fraction (> 0.15) = 0.080
 ------------------------------------
+NRC_F200W_SNR > 5.0, HIGH PROBABILITY, LOW Q_Z (N = 48622)
+ bias = 0.008 +/- 0.075
+ sigma_68 = 0.032
+ NMAD = 0.028
+ fraction (> 0.15) = 0.030
+------------------------------------
+
 ```
 
 The first is the bias, which is the average and standard deviation of 
 `delta_z = (z_spec - z_phot) / (1 + z_spec)`. Next is `sigma_68`, the value of `delta_z` 
 that encompasses 68% of the residuals around 0. NMAD is Normalized Median Absolute Deviation
 of the residuals, which is defined as `NMAD(delta_z) = 1.48 * Median(abs(delta_z))`. Then
-there's the fraction of outliers with `abs(delta_z) > 0.15`.
+there's the fraction of outliers with `abs(delta_z) > 0.15`. This is done for all objects, 
+those above the given SNR value, and then those with various photo-z code flags.
 
-
+Note: I would try this out with a SNR limit of 0, since many codes, like BPZ and EAZY,
+have flags that do an excellent job discerning good fits. 
 
 ### `Explore_Outliers.py`
 This script allows you to look at the galaxy properties of individual selected outliers.
@@ -339,7 +356,8 @@ usage: NoisySubsample_to_ColorPlots.py [-h] -in INPUT_FILE -yf1 YFILTER1 -yf2
                                        [-outf OPT_OUTPUT_FOLDER]
                                        [-xlim XLIMIT] [-xplim XPLIMIT]
                                        [-xnlim XNLIMIT] [-yslope YSLOPE]
-                                       [-snr SNR] [-ps] [-verb]
+                                       [-yint YINT_VALUE] [-snr SNR] [-ps]
+                                       [-verb]
 
 optional arguments:
   -h, --help            show this help message and exit
@@ -367,6 +385,8 @@ optional arguments:
                         Negative Limit on X-Axis Color?
   -yslope YSLOPE, --yslope YSLOPE
                         Slope on the Selection Line?
+  -yint YINT_VALUE, --yint_value YINT_VALUE
+                        Y-Intercept on the Selection Line?
   -snr SNR, --snr SNR   Filter SNR (default = 3.0)
   -ps, --plot_to_screen
                         Display Plot on Screen (Don't Save)?

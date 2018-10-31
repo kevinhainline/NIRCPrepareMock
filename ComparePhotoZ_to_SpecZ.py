@@ -786,7 +786,7 @@ if (args.make_plots):
 	# Plot a histogram of Outlier Fraction for objects with a specific magnitude range
 	if (args.mag_min):
 		if (args.mag_max):
-			mag_objects = np.where((NIRc_mag > mag_min) & (NIRc_mag < mag_max))[0]
+			mag_objects = np.where((NIRc_mag_highSNR > mag_min) & (NIRc_mag_highSNR < mag_max))[0]
 			name = output_folder+'/error_distribution_'+str(mag_min)+'-'+str(mag_max)+'.png'
 			mag_error_histogram(zspec_highSNR[mag_objects], zphot_highSNR[mag_objects], mag_min, mag_max, name)
 	
