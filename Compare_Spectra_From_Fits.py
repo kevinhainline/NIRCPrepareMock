@@ -5,7 +5,6 @@ import time
 import argparse
 import numpy as np
 import matplotlib
-matplotlib.use("TkAgg")
 import matplotlib.pyplot as plt
 import astropy.stats
 import scipy.stats
@@ -32,8 +31,10 @@ def ABMagtoFlux(abmag):
 # speed of light in angstroms per second
 c = 2.99792458e18
 
-noisy_jades_filters = np.array(['HST_F435W', 'HST_F606W', 'HST_F775W', 'HST_F814W', 'HST_F850LP', 'NRC_F070W', 'NRC_F090W', 'NRC_F115W', 'NRC_F150W', 'NRC_F200W', 'NRC_F277W', 'NRC_F335M', 'NRC_F356W', 'NRC_F410M', 'NRC_F444W'], dtype = 'str')
-noisy_jades_wave = np.array([0.4297, 0.5907, 0.7764, 0.8057, 0.9033, 0.704, 0.902, 1.154, 1.501, 1.989, 2.762, 3.362, 3.568, 4.082, 4.408])
+#noisy_jades_filters = np.array(['HST_F435W', 'HST_F606W', 'HST_F775W', 'HST_F814W', 'HST_F850LP', 'NRC_F070W', 'NRC_F090W', 'NRC_F115W', 'NRC_F150W', 'NRC_F200W', 'NRC_F277W', 'NRC_F335M', 'NRC_F356W', 'NRC_F410M', 'NRC_F444W'], dtype = 'str')
+#noisy_jades_wave = np.array([0.4297, 0.5907, 0.7764, 0.8057, 0.9033, 0.704, 0.902, 1.154, 1.501, 1.989, 2.762, 3.362, 3.568, 4.082, 4.408])
+noisy_jades_filters = np.array(['HST_F435W', 'HST_F606W', 'HST_F775W', 'HST_F814W', 'HST_F850LP', 'NRC_F090W', 'NRC_F115W', 'NRC_F150W', 'NRC_F200W', 'NRC_F277W', 'NRC_F335M', 'NRC_F356W', 'NRC_F410M', 'NRC_F444W'], dtype = 'str')
+noisy_jades_wave = np.array([0.4297, 0.5907, 0.7764, 0.8057, 0.9033, 0.902, 1.154, 1.501, 1.989, 2.762, 3.362, 3.568, 4.082, 4.408])
 number_jades_filters = len(noisy_jades_filters)
 
 # Medium Filters
@@ -57,16 +58,25 @@ parser = argparse.ArgumentParser()
 # Required Arguments #
 ######################
 
-# Input Photometry
+# Input folder
 parser.add_argument(
-  '-input','--input_photometry',
-  help="Input Photometry for analysis",
+  '-in','--inputfolder',
+  help="Input Folder With Mock Catalog Files",
   action="store",
   type=str,
-  dest="input_photometry",
+  dest="input_folder",
   required=True
 )
 
+# Noisy Photometry
+parser.add_argument(
+  '-ni','--noisy_input',
+  help="Input Photometry for analysis",
+  action="store",
+  type=str,
+  dest="noisy_input",
+  required=True
+)
 
 ######################
 # Optional Arguments #
@@ -132,14 +142,6 @@ parser.add_argument(
   required=False
 )
 
-# ID list
-parser.add_argument(
-  '-avg','--average_SED',
-  help="Average the SED of the input list?",
-  action="store_true",
-  dest="average_SED",
-  required=False
-)
 
 
 args=parser.parse_args()
@@ -172,15 +174,67 @@ if (args.id_number_list):
 	number_input_objects = len(ID_numbers)
 	avg_z_spec = np.mean(list_z_spec)
 	avg_z_phot = np.mean(list_z_phot)
-else:
-	if (args.average_SED):
-		print "Cannot average just one object!"
 
-print "Opening up Input Photometry"
+print "Opening up Catalog Photometry"
+mock_filters = ['HST_F435W', 'HST_F606W', 'HST_F775W', 'HST_F814W', 
+	'HST_F850LP', 'NRC_F070W', 'NRC_F090W', 'NRC_F115W', 'NRC_F150W',
+	'NRC_F200W', 'NRC_F277W', 'NRC_F335M', 'NRC_F356W', 
+	'NRC_F410M', 'NRC_F444W']
+
+mock_filter_wavelength = np.array([0.4297, 0.5907, 0.7764, 0.8057, 0.9033, 
+	0.704, 0.902, 1.154, 1.501, 1.989, 2.762, 3.362, 3.568, 4.082, 4.408])
+
+
+number_mock_filters = len(mock_filters)
+
+# Full star-forming catalogue, fits file
+full_sf_mock_file = args.input_folder+'JADES_SF_mock_'+JAGUAR_version+'.fits'
+sftestfits = fits.open(full_sf_mock_file)
+
+# Get redshifts and galaxy properties
+full_sf_IDs = sftestfits[1].data['ID']
+full_sf_redshifts = sftestfits[1].data['redshift']
+full_sf_logmass = sftestfits[1].data['mStar']
+full_sf_re_maj = sftestfits[1].data['Re_maj']
+full_sf_sersic_n = sftestfits[1].data['sersic_n']
+n_sf_objects = len(full_sf_IDs)
+
+# Get the star-forming fluxes. 
+sf_filt_flux = np.zeros([number_mock_filters, n_sf_objects])
+for j in range(0, number_mock_filters):
+	sf_filt_flux[:][j] = sftestfits[1].data[mock_filters[j]+'_fnu']#*1e-23*1e-9
+
+# Full quiescent catalogue, fits file
+full_q_mock_file = args.input_folder+'JADES_Q_mock_'+JAGUAR_version+'.fits'
+qtestfits = fits.open(full_q_mock_file)
+
+# Get redshifts and galaxy properties
+full_q_IDs = qtestfits[1].data['ID']
+full_q_redshifts = qtestfits[1].data['redshift']
+full_q_logmass = qtestfits[1].data['mStar']
+full_q_re_maj = qtestfits[1].data['Re_maj']
+full_q_sersic_n = qtestfits[1].data['sersic_n']
+n_q_objects = len(full_q_IDs)
+
+# Get the quiescent fluxes. 
+q_filt_flux = np.zeros([number_mock_filters, n_q_objects])
+for j in range(0, number_mock_filters):
+	q_filt_flux[:][j] = qtestfits[1].data[mock_filters[j]+'_fnu']#*1e-23*1e-9
+
+full_all_IDs = np.append(full_sf_IDs, full_q_IDs)
+full_all_redshifts = np.append(full_sf_redshifts, full_q_redshifts)
+full_all_logmass = np.append(full_sf_logmass, full_q_logmass)
+full_all_re_maj = np.append(full_sf_re_maj, full_q_re_maj)
+all_filt_flux = np.zeros([number_mock_filters, n_sf_objects+n_q_objects])
+for j in range(0, number_mock_filters):
+	all_filt_flux[:][j] = np.append(sf_filt_flux[:][j], q_filt_flux[:][j])
+
+
+print "Opening up Noisy Photometry"
 # Open up the input photometry 
 # args.input_photometry
-if (args.input_photometry.endswith('.fits')):
-	fitsinput = fits.open(args.input_photometry)
+if (args.noisy_input.endswith('.fits')):
+	fitsinput = fits.open(args.noisy_input)
 	ID_values = fitsinput[1].data['ID']
 	redshifts = fitsinput[1].data['redshift']
 	number_objects = ID_values.size
@@ -193,17 +247,20 @@ if (args.input_photometry.endswith('.fits')):
 			flux_value_err_cat[j,y] = fitsinput[1].data[noisy_jades_filters[y]+'_err'][j]
 
 else:
-	full_input_file = np.loadtxt(args.input_photometry)
+	full_input_file = np.loadtxt(args.noisy_input)
 	ID_values = full_input_file[:,0]
 	redshifts = full_input_file[:,1]
 	number_objects = len(ID_values)
 	flux_value_cat = np.zeros([number_objects, number_jades_filters])
 	flux_value_err_cat = np.zeros([number_objects, number_jades_filters])
 
+	print number_objects, number_jades_filters
 	for j in range(0, number_objects):
 		for y in range(0, number_jades_filters):
 			flux_value_cat[j,y] = full_input_file[j,(y+1)*2]
 			flux_value_err_cat[j,y] = full_input_file[j,((y+1)*2)+1]
+
+
 
 # Look at the output from the Photo-Z programs. 
 
@@ -215,24 +272,18 @@ if (args.eazy_output_folder):
 	z_spec = output_zs[:,1]
 	z_phot = output_zs[:,13]
 
-	#if (args.average_SED && number_input_objects > 1):
-	#	average_true_SED = np.zeros()
-	print args.average_SED
 	print number_input_objects
-	if (args.average_SED == True & number_input_objects > 1):
-		print "Hello!"
 
 	for z in range(0, number_input_objects):
 		print "EAZY Analysis on object: "+str(int(ID_numbers[z]))
 		version = 'EAZY'
 		output_folder = optional_output_folder+'EAZY_analysis/'
-		#if not os.path.exists(output_folder):
-		#    os.makedirs(output_folder)
 	
 		title_for_plot = 'EAZY Results'
 		
 		tempfilt, z_grid, obs_sed, templam, temp_sed, pz, chi2fit = generate_sed_arrays(MAIN_OUTPUT_FILE='photz', OUTPUT_DIRECTORY=args.eazy_output_folder, CACHE_FILE='Same')
 		idx_value = np.where(ids == ID_numbers[z])[0]
+		mock_idx_value = np.where(full_all_IDs == ID_numbers[z])[0][0]
 #		if not idx_value:
 #		  sys.exit("Specified ID number ("+str(ID_numbers[z])+") not valid! ")
 #		else:
@@ -243,21 +294,12 @@ if (args.eazy_output_folder):
 			
 		# GETTING THE TRUE SPECTRUM
 		start_time = time.time()
-		#print "Getting true spectrum, OBJ ID "+str(ID_values[idx])
+		print "Getting true spectrum, OBJ ID "+str(ID_values[idx])
 		true_wavelength, spectrum_obj = return_true_spectrum(int(ID_values[idx]))
 		end_time = time.time()
 		delta_time = end_time - start_time
-		#print "Done! It took: "+str(delta_time)
+		print "Done! It took: "+str(delta_time)
 	
-		if ((args.average_SED == True) & (number_input_objects > 1)):
-			if (z == 0):
-				average_template_wave = tempfilt['lc']
-				average_template_phot = obs_sed[:,idx]/1e-23/1e-9
-				average_noisy_wave = noisy_jades_wave*10000
-				average_noisy_phot = flux_value_cat[idx,:]
-			else:
-				average_template_phot = (average_template_phot + obs_sed[:,idx]/1e-23/1e-9) / 2.0
-				average_noisy_phot = (average_noisy_phot + flux_value_cat[idx,:]) / 2.0
 
 		#
 		# START PLOTTING
@@ -266,36 +308,41 @@ if (args.eazy_output_folder):
 		plt.clf() 
 		plt.figure(figsize=(11,5))
 		plt.subplot(1, 2, 1)
-		plt.scatter(tempfilt['lc'], obs_sed[:,idx]/1e-23/1e-9, color='blue', edgecolors='none', s = 50, label='Template Photometry', zorder = 10)
-		plt.plot(templam*(1+z_grid[idx]), temp_sed[:,idx]/1e-23/1e-9, color='b', alpha=0.5, label='Template Spectrum')
-		plt.errorbar(noisy_jades_wave[filters_to_use_indices]*10000, flux_value_cat[idx,filters_to_use_indices], flux_value_err_cat[idx,filters_to_use_indices], ecolor = 'green', fmt='none')
-		plt.scatter(noisy_jades_wave[filters_to_use_indices]*10000, flux_value_cat[idx,filters_to_use_indices], color = 'green', edgecolors='none', s = 60, label='Noisy Input Flux', zorder = 9)
-		
-		# PLOT THE TRUE SPECTRUM	
+		plt.scatter(tempfilt['lc']/10000, obs_sed[:,idx]/1e-23/1e-9, color='green', edgecolors='none', s = 50, label='Template Photometry', zorder = 10)
+		plt.plot(templam*(1+z_grid[idx])/10000, temp_sed[:,idx]/1e-23/1e-9, color='g', alpha=0.5, label='Template Spectrum')
+		plt.errorbar(noisy_jades_wave[filters_to_use_indices], flux_value_cat[idx,filters_to_use_indices]/1e-23/1e-9, flux_value_err_cat[idx,filters_to_use_indices]/1e-23/1e-9, ecolor = 'red', fmt='none')
+		plt.scatter(noisy_jades_wave[filters_to_use_indices], flux_value_cat[idx,filters_to_use_indices]/1e-23/1e-9, color = 'red', edgecolors='none', s = 60, label='Noisy Input Flux', zorder = 9)
+
+		# PLOT THE TRUE SPECTRUM
 		sf_spec_array_fnu = (spectrum_obj/(1.0+z_spec[idx]) * ((1.0+z_spec[idx]) * true_wavelength)**2 / c) 
 		sf_wave_z = np.array((1.0+z_spec[idx]) * true_wavelength)
 		sf_flux_nJy = np.array(sf_spec_array_fnu/1e-23/1e-9)
-		plt.plot(sf_wave_z, sf_flux_nJy, color = 'green', label = 'Input Spectrum', alpha = 0.5)
+		plt.plot(sf_wave_z/10000, sf_flux_nJy, color = 'blue', label = 'Input Spectrum', alpha = 0.5)
+		#plt.plot(sf_wave_z/10000, sf_flux_nJy/1.5, color = 'blue', label = 'Aperture Loss Spectrum', alpha = 0.3)
+		#plt.plot(sf_wave_z/10000, sf_flux_nJy/2, color = 'blue', alpha = 0.2)
+		#plt.plot(sf_wave_z/10000, sf_flux_nJy/2.5, color = 'blue', alpha = 0.1)
+		#plt.plot(sf_wave_z/10000, sf_flux_nJy/3, color = 'blue', alpha = 0.05)
+		
+		plt.scatter(mock_filter_wavelength, all_filt_flux[:,mock_idx_value], color = 'blue', edgecolors='none', s = 60, label='Mock Catalog Flux', zorder = 9, alpha = 0.4)
 		
 		# GET THE MIN/MAX VALUES
-		min_flux = np.min(flux_value_cat[idx,:])
+		min_flux = np.min(flux_value_cat[idx,:]/1e-23/1e-9)
 		if (min_flux < 1e-2):
 			min_flux = 1e-2
-		max_flux = np.max(flux_value_cat[idx,:])
+		max_flux = np.max(flux_value_cat[idx,:]/1e-23/1e-9)
 		y_axis_difference = max_flux - min_flux
 		
-		#plt.text(3200, min_flux + 1.8*y_axis_difference, 'ID = '+str(int(ID_values[idx])))
-		#plt.text(3200, min_flux + 1.2*y_axis_difference, 'z$_{spec}$ = '+str(z_spec[idx]))
-		#plt.text(3200, min_flux + 0.8*y_axis_difference, 'z$_{phot}$ = '+str(z_phot[idx]))
-		plt.loglog()
-		plt.title('ID = '+str(int(ID_values[idx]))+', z$_{spec}$ = '+str(z_spec[idx])+', z$_{phot}$ = '+str(z_phot[idx]))
-		plt.xlim(3000,6.e4)
+		plt.semilogy()
+		plt.title('ID = '+str(int(ID_values[idx]))+', log(Mass) = '+str(np.round(full_all_logmass[mock_idx_value],2))+', Re_maj = '+str(full_all_re_maj[mock_idx_value])+' \'\'')
+		plt.xlim(3000/10000,6.e4/10000)
 		plt.ylim(0.5*min_flux, max_flux+2*max_flux)
 		plt.legend(loc='lower right')
-		plt.xlabel(r'Observed wavelength, $\mathrm{\AA}$')
-		plt.ylabel(r'Observed flux, $f_\nu$ ')
+#		plt.xlabel(r'Observed wavelength, $\mathrm{\AA}$')
+		plt.xlabel(r'Observed wavelength, Microns')
+		plt.ylabel(r'Observed flux, $f_\nu$ (nJy)')
 		#plt.tight_layout()
 		plt.subplot(1, 2, 2)
+		#plt.title(z$_{spec}$ = '+str(z_spec[idx])+', z$_{phot}$ = '+str(z_phot[idx]))
 		plt.plot(tempfilt['zgrid'], chi2fit[:,idx])
 		plt.xlabel(r'z$_{phot}$')
 		plt.ylabel(r'$\chi^2$')
@@ -306,69 +353,9 @@ if (args.eazy_output_folder):
 		plt.axvspan(z_phot[idx]-0.05, z_phot[idx]+0.05, color = 'blue')
 		plt.text(z_spec[idx]+0.15, 0.8*max(chi2fit[:,idx]), 'z$_{spec}$ = '+str(z_spec[idx]), color = 'green', rotation = 90, alpha = 0.5)
 		plt.text(z_phot[idx]+0.15, 0.8*max(chi2fit[:,idx]), 'z$_{phot}$ = '+str(z_phot[idx]), color = 'blue', rotation = 90, alpha = 0.5)
-		if not (args.average_SED):
-			#plt.show()
-			plt.savefig(args.eazy_output_folder+str(int(ID_numbers[z]))+'_SED.png', dpi = 300)
-
-	if ((args.average_SED == True) & (number_input_objects > 1)):
-
-		print "Plotting the Average SED!"
-		plt.clf()
-		# Normalize Average Photometry / Flux
-		# normalization_index
-		average_template_phot = average_template_phot * (10.0 / average_template_phot[normalization_index-1])
-		average_noisy_phot = average_noisy_phot * (10.0 / average_noisy_phot[normalization_index])
 		
-		for z in range(0, number_input_objects):
-			tempfilt, z_grid, obs_sed, templam, temp_sed = generate_sed_arrays(MAIN_OUTPUT_FILE='photz', OUTPUT_DIRECTORY=args.eazy_output_folder, CACHE_FILE='Same')
+		plt.savefig(args.eazy_output_folder+str(int(ID_numbers[z]))+'_SED.png', dpi = 300)
 
-			idx_value = np.where(ids == ID_numbers[z])[0]
-			idx = idx_value[0]
-			
-			normalization_value = 10 / flux_value_cat[idx,:][normalization_index]
-			
-			# Plot the Template Spectrum 
-			plt.scatter(tempfilt['lc'], normalization_value*obs_sed[:,idx]/1e-23/1e-9, color='r', edgecolors='none', alpha=0.2, s = 30)
-			# Plot the Template Photometry
-			plt.plot(templam*(1+z_grid[idx]), normalization_value*temp_sed[:,idx]/1e-23/1e-9, color='red', alpha=0.2)
-			# Plot the Input Photometry
-			plt.scatter(noisy_jades_wave*10000, normalization_value*flux_value_cat[idx,:], color = 'green', edgecolors='none', alpha = 0.2, s = 30)
-
-			# GETTING THE TRUE SPECTRUM
-			# True Spectrum
-			true_wavelength, spectrum_obj = return_true_spectrum(int(ID_values[idx]))
-			sf_spec_array_fnu = (spectrum_obj/(1.0+z_spec[idx]) * ((1.0+z_spec[idx]) * true_wavelength)**2 / c) 
-			sf_wave_z = np.array((1.0+z_spec[idx]) * true_wavelength)
-			sf_flux_nJy = np.array(sf_spec_array_fnu/1e-23/1e-9)
-			plt.plot(sf_wave_z, normalization_value*sf_flux_nJy, color = 'orange', alpha = 0.2)
-
-		# Average Template Photometry
-		plt.scatter(average_template_wave, average_template_phot, color='red', edgecolors=None, alpha=1.0, s = 60, label='Average Template Photometry')
-		# Average Noisy Input Fluxes
-		plt.scatter(average_noisy_wave, average_noisy_phot, color = 'green', edgecolors=None, s = 60, label='Average Noisy Input Flux', alpha = 1.0)
-		
-		# PLOT THE TRUE SPECTRUM	
-		#plt.plot(sf_wave_z, sf_flux_nJy, color = 'orange', label = 'Input Spectrum', alpha = 0.6)
-		
-		# GET THE MIN/MAX VALUES
-		min_flux = np.min(average_noisy_phot)
-		if (min_flux < 1e-2):
-			min_flux = 1e-2
-		max_flux = np.max(average_noisy_phot)
-		y_axis_difference = max_flux - min_flux
-		
-	#	plt.text(3200, min_flux + 1.8*y_axis_difference, 'ID = '+str(int(ID_values[idx])))
-	#	plt.text(3200, min_flux + 3.0*y_axis_difference, '<z$_{spec}$> = '+str(round(avg_z_spec,4)), color = 'orange')
-	#	plt.text(3200, min_flux + 1.8*y_axis_difference, '<z$_{phot}$> = '+str(round(avg_z_phot,4)), color = 'red')
-		plt.title('z$_{spec}$ = '+str(round(avg_z_spec,4))+', z$_{phot}$ = '+str(round(avg_z_phot,4)))
-		plt.loglog()
-		plt.xlim(3000,6.e4)
-		plt.ylim(0.5*min_flux, max_flux+2*max_flux)
-		plt.legend(loc='lower right')
-		plt.xlabel(r'Observed wavelength, $\mathrm{\AA}$')
-		plt.ylabel(r'Observed flux ($f_\nu$, normalized)')
-		#plt.tight_layout()
-		plt.show()
 
 	
 # BPZ 
@@ -400,6 +387,8 @@ if (args.bpz_output_folder):
 	for z in range(0, number_input_objects):
 		print "BPZ Analysis on object: "+str(int(ID_numbers[z]))
 		version = 'BPZ'
+
+		mock_idx_value = np.where(full_all_IDs == ID_numbers[z])[0][0]
 
 		ID_index = np.where(ids == ID_numbers[z])[0][0]
 		idx = ID_index
@@ -468,6 +457,7 @@ if (args.bpz_output_folder):
 			temp_fnu_final_normalized = temp_fnu_final / np.mean(temp_fnu_final_bpz_filters_norm)
 		
 		#print temp_fnu_final_normalized
+
 		
 		#
 		# START PLOTTING
@@ -475,16 +465,18 @@ if (args.bpz_output_folder):
 		# PLOT THE BPZ TEMPLATE PHOTOMETRY and SPECTRUM
 		plt.figure(figsize=(11,5))
 		plt.subplot(1, 2, 1)
-		plt.scatter(bpz_wave*10000, template_fluxes, color='blue', edgecolors='none', s = 50, label='Template Photometry', zorder = 10)
-		plt.plot(temp_wave_final, temp_fnu_final_normalized, color='b', alpha=0.5, label='Template Spectrum')
-		plt.errorbar(noisy_jades_wave[filters_to_use_indices]*10000, flux_value_cat[idx,filters_to_use_indices], flux_value_err_cat[idx,filters_to_use_indices], ecolor = 'green', fmt='none')
-		plt.scatter(noisy_jades_wave[filters_to_use_indices]*10000, flux_value_cat[idx,filters_to_use_indices], color = 'green', edgecolors='none', s = 60, label='Noisy Input Flux', zorder = 9)
+		plt.scatter(bpz_wave, template_fluxes, color='green', edgecolors='none', s = 50, label='Template Photometry', zorder = 10)
+		plt.plot(temp_wave_final/10000, temp_fnu_final_normalized, color='g', alpha=0.5, label='Template Spectrum')
+		plt.errorbar(noisy_jades_wave[filters_to_use_indices], flux_value_cat[idx,filters_to_use_indices], flux_value_err_cat[idx,filters_to_use_indices], ecolor = 'red', fmt='none')
+		plt.scatter(noisy_jades_wave[filters_to_use_indices], flux_value_cat[idx,filters_to_use_indices], color = 'red', edgecolors='none', s = 60, label='Noisy Input Flux', zorder = 9)
 	
 		# PLOT THE TRUE SPECTRUM	
 		sf_spec_array_fnu = (spectrum_obj/(1.0+z_spec[idx]) * ((1.0+z_spec[idx]) * true_wavelength)**2 / c) 
 		sf_wave_z = np.array((1.0+z_spec[idx]) * true_wavelength)
 		sf_flux_nJy = np.array(sf_spec_array_fnu/1e-23/1e-9)
-		plt.plot(sf_wave_z, sf_flux_nJy, color = 'green', label = 'Input Spectrum', alpha = 0.5)
+		plt.plot(sf_wave_z/10000, sf_flux_nJy, color = 'blue', label = 'Input Spectrum', alpha = 0.5)
+
+		plt.scatter(mock_filter_wavelength, all_filt_flux[:,mock_idx_value], color = 'blue', edgecolors='none', s = 60, label='Mock Catalog Flux', zorder = 9, alpha = 0.4)
 			
 		# GET THE MIN/MAX VALUES
 		min_flux = np.min(flux_value_cat[idx,:])
@@ -496,13 +488,13 @@ if (args.bpz_output_folder):
 		#plt.text(3200, min_flux + 1.8*y_axis_difference, 'ID = '+str(int(ID_values[idx])))
 		#plt.text(3200, min_flux + 1.2*y_axis_difference, 'z$_{spec}$ = '+str(z_spec[idx]))
 		#plt.text(3200, min_flux + 0.8*y_axis_difference, 'z$_{phot}$ = '+str(z_phot[idx]))
-		plt.loglog()
-		plt.title('ID = '+str(int(ID_values[idx]))+', z$_{spec}$ = '+str(z_spec[idx])+', z$_{phot}$ = '+str(z_phot[idx]))
-		plt.xlim(3000,6.e4)
-		plt.ylim(0.5*min_flux, max_flux+2*max_flux)
+		plt.semilogy()
+		plt.title('ID = '+str(int(ID_values[idx]))+', log(Mass) = '+str(np.round(full_all_logmass[mock_idx_value],2))+', Re_maj = '+str(full_all_re_maj[mock_idx_value])+' \'\'')
+		plt.xlim(3000/10000,6.e4/10000)
+		plt.ylim(0.5*min_flux, max_flux+5*max_flux)
 		plt.legend(loc='lower right')
-		plt.xlabel(r'Observed wavelength, $\mathrm{\AA}$')
-		plt.ylabel(r'Observed flux, $f_\nu$ ')
+		plt.xlabel(r'Observed wavelength, Microns')#$\mathrm{\AA}$')
+		plt.ylabel(r'Observed flux, $f_\nu$ (nJy)')
 	
 		plt.subplot(1, 2, 2)
 		plt.plot(pz_redshifts, pz_values)

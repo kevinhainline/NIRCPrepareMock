@@ -74,10 +74,32 @@ pixel_size = np.array([0.049, 0.049, 0.049, 0.049, 0.049, 0.032, 0.032, 0.032, 0
 bkgnd_nJy = np.array([4.778, 9.237, 12.240, 12.350, 12.678, 6.39, 6.39, 5.92, 4.97, 3.79, 18.76, 13.82, 14.81, 21.72, 31.60])     # /* backgrounds_for_GOODS_S_in_nJy/pix */
 e_sec_nJy = np.array([0.005119048, 0.010952381, 0.005, 0.006506024, 0.002435897, 0.0189, 0.0268, 0.0297, 0.0392, 0.0452, 0.0375, 0.0164, 0.0433, 0.0177, 0.0379])   # /* e/sec/nJy  */
 read_noise = np.array([5.6, 5.6, 5.6, 5.6, 5.6, 6.0, 6.0, 6.0, 6.0, 6.0, 9.0, 9.0, 9.0, 9.0, 9.0]) # /* read_noise */
-n_exposures_medium = np.array([112, 112, 288, 256, 288, 5, 8, 8, 7, 5, 7, 5, 5, 8, 8]) # /* No._of_exposures (MEDIUM) */
+
+# HST DEPTH
+# HST with XDF depths, Table 3, Illingworth et al (2013)
+n_exposures_xdf = np.array([164, 286, 460, 362, 700])
+base_exposure_time_xdf = np.array([929., 609., 821., 140., 602.])
+
+# HST with  CANDELs depths, Table 6, Grogin et al (2011)
+n_exposures_candels = np.array([])
+base_exposure_time_candels = np.array([])
+
+# NIRCam DEPTH
+# Medium (Average) Survey Depth
+n_exposures_medium_nircam = np.array([ 5, 8, 8, 7, 5, 7, 5, 5, 8, 8])
+# Deep (Average) Survey Depth
+n_exposures_deep_nircam = np.array([ 0, 44, 58, 43, 28, 35, 22, 28, 44, 44])
+base_exposure_time_nircam = np.array([1385., 1385., 1385., 1385., 1385., 1385., 1385., 1385., 1385., 1385.])
+
+# currently using XDF
+n_exposures_deep = np.append(n_exposures_xdf, n_exposures_deep_nircam)
+n_exposures_medium = np.append(n_exposures_xdf, n_exposures_medium_nircam)
+base_exposure_time = np.append(base_exposure_time_xdf, base_exposure_time_nircam)
+
+# Original Marcia XDF
+#n_exposures_medium = np.array([112, 112, 288, 256, 288, 5, 8, 8, 7, 5, 7, 5, 5, 8, 8]) # /* No._of_exposures (MEDIUM) */
 #n_exposures_deep = np.array([112, 112, 288, 256, 288, 0, 44, 58, 43, 28, 35, 22, 28, 44, 44]) # /* No._of_exposures (DEEP) */
-n_exposures_deep = np.array([0, 0, 0, 0, 0, 0, 44, 58, 43, 28, 35, 22, 28, 44, 44]) # /* No._of_exposures (DEEP) */
-base_exposure_time = np.array([1200., 1200., 1200., 1200., 1200., 1385., 1385., 1385., 1385., 1385., 1385., 1385., 1385., 1385., 1385.])#  /* Base_exposure_time */
+#base_exposure_time = np.array([1200., 1200., 1200., 1200., 1200., 1385., 1385., 1385., 1385., 1385., 1385., 1385., 1385., 1385., 1385.])#  /* Base_exposure_time */
 #medium_time = np.array([152000., 174000., 377800., 50800., 421600., 0.00000, 11700., 11700., 9100., 7500., 9200., 6700., 7500., 11700., 11700.]) # Deep_survey_exp_times_per_filter */
 #deep_time = np.array([152000., 174000., 377800., 50800., 421600., 60500., 60500., 80800., 59300., 38800., 49100., 30900., 38800., 60500., 60500.]) # Deep_survey_exp_times_per_filter */
 aperture = np.array([0.16, 0.24, 0.32, 0.64])   # photom_apertures_in_arcsec  */
@@ -201,8 +223,8 @@ if args.input_file.endswith('.fits'):
 	fitsinput = fits.open(args.input_file)
 	ID_numbers = fitsinput[1].data['ID']
 	redshifts = fitsinput[1].data['redshift']
-	logmasses = fitsinput[1].data['logmass']
-	re_major = fitsinput[1].data['re_major']
+	#logmasses = fitsinput[1].data['logmass']
+	re_major = fitsinput[1].data['Re_maj']
 	sersic_n = fitsinput[1].data['sersic_n']
 	n_objects = ID_numbers.size
 
@@ -216,7 +238,7 @@ else:
 	cat_file_full = np.loadtxt(catalogue_file)
 	ID_numbers = cat_file_full[:,0]
 	redshifts = cat_file_full[:,1]
-	logmasses = cat_file_full[:,2]
+	#logmasses = cat_file_full[:,2]
 	re_major = cat_file_full[:,3]
 	sersic_n = cat_file_full[:,4]
 	n_objects = ID_numbers.size

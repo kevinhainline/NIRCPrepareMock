@@ -4,7 +4,6 @@ import math
 import argparse
 import numpy as np
 import matplotlib
-matplotlib.use("TkAgg")
 import matplotlib.pyplot as plt
 from matplotlib.widgets import LassoSelector
 from matplotlib.path import Path
@@ -15,7 +14,7 @@ from astropy.io import ascii
 from astropy.table import Table
 
 # Which version of the mock are you using
-JAGUAR_version = 'r1_v1.1'
+JAGUAR_version = 'r1_v1.2'
 
 # Parser for figuring out the various input parameters
 parser = argparse.ArgumentParser()

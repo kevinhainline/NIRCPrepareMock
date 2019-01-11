@@ -5,7 +5,6 @@ import argparse
 import random
 import numpy as np
 import matplotlib
-matplotlib.use("TkAgg")
 import matplotlib.pyplot as plt
 from astropy.io import fits
 from astropy.io import fits
@@ -15,7 +14,7 @@ from astropy.table import Table
 def JytoABMag(flux):
 	return (-5.0 / 2.0) * np.log10(flux) - 48.60
 
-JAGUAR_version = 'r1_v1.1'
+JAGUAR_version = 'r1_v1.2'
 
 randomize_IDs = 0
 
@@ -72,7 +71,7 @@ total_jaguar_width = 11.0
 total_jaguar_height = 11.0
 
 ra_center = 53.1625
-dec_center = -27.78141667
+dec_center = -27.79141667#-27.78141667
 cosdec_center = math.cos(dec_center * 3.141593 / 180.0)
 
 if ((width > total_jaguar_width) | (height > total_jaguar_height)):

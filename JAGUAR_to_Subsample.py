@@ -12,7 +12,7 @@ from astropy.table import Table
 def JytoABMag(flux):
 	return (-5.0 / 2.0) * np.log10(flux) - 48.60
 
-JAGUAR_version = 'r1_v1.1'
+JAGUAR_version = 'r1_v1.2'
 
 
 randomize_IDs = 0
@@ -416,7 +416,7 @@ if (args.make_fits):
 	colnames[0] = 'ID'
 	colnames[1] = 'redshift'
 	colnames[2] = 'logmass'
-	colnames[3] = 're_major'
+	colnames[3] = 'Re_maj'
 	colnames[4] = 'sersic_n'
 		
 	dtype[0] = 'I'

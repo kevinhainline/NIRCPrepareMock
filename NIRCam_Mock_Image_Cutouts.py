@@ -16,9 +16,12 @@ JAGUAR_version = 'r1_v1.1'
 parser = argparse.ArgumentParser()
 
 # Filter file names for R, G, and B filters
-r_name = 'goods_s_F200W_2018_08_29.fits'
-g_name = 'goods_s_F115W_2018_08_29.fits'
-b_name = 'goods_s_F090W_2018_08_29.fits'
+r_filtername = 'F200W'#'F356W'#
+g_filtername = 'F115W'#'F277W'#
+b_filtername = 'F090W'#'F200W'#
+r_name = 'goods_s_F200W_2018_08_29.fits'#'goods_s_F356W_2018_08_30.fits'#
+g_name = 'goods_s_F115W_2018_08_29.fits'#'goods_s_F277W_2018_08_29.fits'
+b_name = 'goods_s_F090W_2018_08_29.fits'#'goods_s_F200W_2018_08_29.fits'
 
 # Lupton image stretch values, you should change
 # these if you're not super happy with the way the
@@ -272,12 +275,12 @@ if (args.show_crosshairs):
 	ax.plot([objRA - (closeness_to_object) * rasize_value/3600.0, objRA - (farposition_from_object) * rasize_value/3600.0],[objDEC, objDEC], transform=ax.get_transform('fk5'), color='white')
 
 # Add the scale bar 
-#if (rasize_value < 8):
-#	scale_bar_length = 1.0
-#if (rasize_value >= 8):
-#	scale_bar_length = 3.0
-#if (rasize_value >= 60):
-#	scale_bar_length = 30.0
+if (rasize_value < 8):
+	scale_bar_length = 1.0
+if (rasize_value >= 8):
+	scale_bar_length = 3.0
+if (rasize_value >= 60):
+	scale_bar_length = 30.0
 #if (args.show_scale):
 #	leftside_RA = (objRA+scale_bar_length/(2*3600)/cosdec_center)+(0.4)*(rasize_value/3600.0)
 #	rightside_RA = (objRA-scale_bar_length/(2*3600)/cosdec_center)+(0.4)*(rasize_value/3600.0)

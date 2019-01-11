@@ -229,7 +229,6 @@ if (args.input_file.endswith('.fits')):
 	redshifts = fitsinput[1].data['redshift']
 	number_objects = ID_values.size
 
-
 if (args.id_number_list):
 	correct_object_indices = np.zeros(number_input_objects, dtype = int)
 	for z in range(0, number_input_objects):

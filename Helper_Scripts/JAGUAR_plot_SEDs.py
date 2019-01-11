@@ -11,7 +11,7 @@ import matplotlib
 import matplotlib.pyplot as plt
 import matplotlib.patches as patches
 
-def get_SF_SED_filename(SF_ID_number):
+def get_SF_SED_filename_v11(SF_ID_number):
 
 	if (SF_ID_number <= 50000):
 		SF_filename = 'JADES_SF_mock_r1_v1.1_spec_5A_ID_1_50000.fits'
@@ -27,6 +27,25 @@ def get_SF_SED_filename(SF_ID_number):
 		SF_filename = 'JADES_SF_mock_r1_v1.1_spec_5A_ID_250001_300000.fits'
 	if ((SF_ID_number > 300000) & (SF_ID_number <= 302515)):
 		SF_filename = 'JADES_SF_mock_r1_v1.1_spec_5A_ID_300001_302515.fits'
+		
+	return SF_filename
+
+def get_SF_SED_filename_v12(SF_ID_number):
+
+	if (SF_ID_number <= 44829):
+		SF_filename = 'JADES_SF_mock_r1_v1.2_spec_5A_30um_z_0p2_1.fits.gz'
+	if ((SF_ID_number > 44829) & (SF_ID_number <= 81779)):
+		SF_filename = 'JADES_SF_mock_r1_v1.2_spec_5A_30um_z_1_1p5.fits.gz'
+	if ((SF_ID_number > 81779) & (SF_ID_number <= 115980)):
+		SF_filename = 'JADES_SF_mock_r1_v1.2_spec_5A_30um_z_1p5_2.fits.gz'
+	if ((SF_ID_number > 115980) & (SF_ID_number <= 172661)):
+		SF_filename = 'JADES_SF_mock_r1_v1.2_spec_5A_30um_z_2_3.fits.gz'
+	if ((SF_ID_number > 172661) & (SF_ID_number <= 216240)):
+		SF_filename = 'JADES_SF_mock_r1_v1.2_spec_5A_30um_z_3_4.fits.gz'
+	if ((SF_ID_number > 216248) & (SF_ID_number <= 248165)):
+		SF_filename = 'JADES_SF_mock_r1_v1.2_spec_5A_30um_z_4_5.fits.gz'
+	if ((SF_ID_number > 248165) & (SF_ID_number <= 302514)):
+		SF_filename = 'JADES_SF_mock_r1_v1.2_spec_5A_30um_z_5_15.fits.gz'
 		
 	return SF_filename
 
@@ -135,7 +154,7 @@ if (args.Q_ID):
 	full_q_F277W = testfits[1].data['NRC_F277W_fnu']
 	full_q_F335M = testfits[1].data['NRC_F335M_fnu']
 	full_q_F356W = testfits[1].data['NRC_F356W_fnu']
-	full_q_fake_mag = testfits[1].data['NRC_F410M_F444W_fnu']
+	#full_q_fake_mag = testfits[1].data['NRC_F410M_F444W_fnu']
 	full_q_F410M = testfits[1].data['NRC_F410M_fnu']
 	full_q_F444W = testfits[1].data['NRC_F444W_fnu']
 	full_q_sSFR = 9.0 + testfits[1].data['sSFR']
@@ -171,6 +190,7 @@ if (args.Q_ID):
 	# Quiescent SEDs
 	full_q_SED = args.SED_input_folder + 'JADES_Q_mock_'+JAGUAR_version+'_spec_5A.fits'
 	#'/Volumes/KNH_EXTERNAL/Mock_v1.1_SEDs/JADES_Q_mock_r1_v1.1_spec_5A.fits'
+	#full_q_SED = args.SED_input_folder + 'JADES_Q_mock_'+JAGUAR_version+'_spec_5A_30um.fits.gz'
 	testfits = fits.open(full_q_SED)
 	gal_properties = testfits[3].data
 	wavelength = testfits[2].data
@@ -244,7 +264,10 @@ if (args.SF_ID):
 	sf_apparent_ABmag_IRAC[1] = FluxtoABMag(full_sf_IRAC_4p5[sf_ID]*1e-23*1e-9)
 	
 	# SF SEDs 
-	full_sf_SED = args.SED_input_folder + get_SF_SED_filename(SF_ID)
+	if (JAGUAR_version == 'r1_v1.1'):
+		full_sf_SED = args.SED_input_folder + get_SF_SED_filename_v11(SF_ID)
+	if (JAGUAR_version == 'r1_v1.2'):
+		full_sf_SED = args.SED_input_folder + get_SF_SED_filename_v12(SF_ID)
 	testfits = fits.open(full_sf_SED)
 	gal_properties = testfits[3].data
 	wavelength = testfits[2].data
@@ -306,6 +329,9 @@ if ((args.SF_ID is not None)):
 	flux_min = np.min(sf_apparent_ABmag_nircam)
 	y_min = flux_min
 	
+	if (y_max > 30):
+		y_max = 30.0
+	
 	if (args.plot_filters):
 		for filter in range(0, n_filters):
 			ind_filter_file = filter_link[filter]
@@ -332,11 +358,11 @@ if ((args.SF_ID is not None)):
 		horizontalalignment='left',
 		verticalalignment='center',
 		transform = ax1.transAxes)
-	ax1.text(0.05, 0.8,r'$z$ = '+str(round(full_sf_redshifts[sf_ID],3)),
+	ax1.text(0.05, 0.85,r'$z$ = '+str(round(full_sf_redshifts[sf_ID],3)),
 		horizontalalignment='left',
 		verticalalignment='center',
 		transform = ax1.transAxes)
-	ax1.text(0.05, 0.7,r'sSFR/Gyr$^{-1}$ = '+str(round(full_sf_sSFR[sf_ID], 3)),
+	ax1.text(0.05, 0.8,r'log(sSFR/Gyr$^{-1}$) = '+str(round(full_sf_sSFR[sf_ID], 3)),
 		horizontalalignment='left',
 		verticalalignment='center',
 		transform = ax1.transAxes)
@@ -395,11 +421,11 @@ if ((args.Q_ID is not None)):
 	     horizontalalignment='left',
 	     verticalalignment='center',
 	     transform = ax1.transAxes)
-	ax1.text(0.05, 0.8,r'$z$ = '+str(round(full_q_redshifts[q_ID],3)),
+	ax1.text(0.05, 0.85,r'$z$ = '+str(round(full_q_redshifts[q_ID],3)),
 	     horizontalalignment='left',
 	     verticalalignment='center',
 	     transform = ax1.transAxes)
-	ax1.text(0.05, 0.7,r'log(M / M$_\odot$) = '+str(round(quiescent_mass, 3)),
+	ax1.text(0.05, 0.8,r'log(M / M$_\odot$) = '+str(round(quiescent_mass, 3)),
 	     horizontalalignment='left',
 	     verticalalignment='center',
 	     transform = ax1.transAxes)
@@ -426,4 +452,5 @@ elif ((args.SF_ID is None) & (args.Q_ID is not None)):
 elif ((args.SF_ID is not None) & (args.Q_ID is None)):
 	object_name = 'SF_'+str(SF_ID)+'_SED.pdf'
 
-plt.savefig(object_name, dpi=200)
+plt.show()
+#plt.savefig(object_name, dpi=200)
