@@ -182,23 +182,29 @@ NRC_F444W F444W F444W_NRConly_ModAB_mean_resampled.res NIRCam_F444W.res
 ```
 
 ### `ComparePhotoZ_to_SpecZ.py`
-This script takes in the output files from EAZY, BPZ, and Le Phare (at the moment) and
+This script takes in the output files from EAZY and
 calculates statistics and produces plots that show the photometric redshifts compared to the 
 spectroscopic redshifts as a function of both SNR, and a second parameter from the JAGUAR 
-catalog, if you specify. For EAZY and BPZ, the `z_prob` and `ODDS` parameters are used as
-an additional filter.
+catalog, if you specify. The user can specify whether they want to make an SNR cut (and
+which filter to use), or a `prob_z` cut, or a `q_z` cut, for the analysis. The user
+can also specify a `q_z` cut over different redshift ranges, if they want to make a more
+liberal cut at higher redshift. Finally, the program
+produces a summary file of the important statistics from the EAZY output file, and the
+user can set the multiple flag to print out other chi-square minima redshifts (and their
+associated chi-square values), and they can set the kde flag to run a kde smoothing 
+(sigma = 5) on the chi-square surface to help against printing out a huge amount of 
+multiple solutions. 
 ```
 usage: ComparePhotoZ_to_SpecZ.py [-h] -input INPUT_PHOTOMETRY -nrcf
-                                 NIRCAM_FILTER -snrl SNR_LIMIT
-                                 [-outf OPT_OUTPUT_FOLDER]
-                                 [-eazy EAZY_OUTPUT_FILE]
-                                 [-bpz BPZ_OUTPUT_FILE]
-                                 [-lep LEPHARE_OUTPUT_FILE]
-                                 [-zeb ZEBRA_OUTPUT_FILE] [-minz MINIMUM_Z]
+                                 NIRCAM_FILTER -eazy EAZY_OUTPUT_FILE
+                                 [-snrl SNR_LIMIT] [-eazyprob EAZYPROB_LIMIT]
+                                 [-eazyqz EAZYQZ_LIMIT]
+                                 [-eazyqz_zrange EAZYQZ_ZRANGE]
+                                 [-outf OPT_OUTPUT_FOLDER] [-minz MINIMUM_Z]
                                  [-maxz MAXIMUM_Z] [-magmin MAG_MIN]
                                  [-magmax MAG_MAX] [-mp] [-outliers]
-                                 [-pointdensity] [-jaguar JAGUAR_PATH]
-                                 [-jparam JAGUAR_PARAM]
+                                 [-pointdensity] [-multiple] [-kde]
+                                 [-jaguar JAGUAR_PATH] [-jparam JAGUAR_PARAM]
 
 optional arguments:
   -h, --help            show this help message and exit
@@ -206,18 +212,18 @@ optional arguments:
                         Input Photometry for analysis
   -nrcf NIRCAM_FILTER, --nircam_filter NIRCAM_FILTER
                         NIRCam filter for SNR analysis?
+  -eazy EAZY_OUTPUT_FILE, --eazy_output_file EAZY_OUTPUT_FILE
+                        EAZY output file path?
   -snrl SNR_LIMIT, --snr_limit SNR_LIMIT
                         SNR Limit for analysis?
+  -eazyprob EAZYPROB_LIMIT, --eazyprob_limit EAZYPROB_LIMIT
+                        SNR Limit for analysis?
+  -eazyqz EAZYQZ_LIMIT, --eazyqz_limit EAZYQZ_LIMIT
+                        EAZY Q_z limit?
+  -eazyqz_zrange EAZYQZ_ZRANGE, --eazyqz_zrange EAZYQZ_ZRANGE
+                        EAZY Q_z limit (as a function of redshift)?
   -outf OPT_OUTPUT_FOLDER, --opt_output_folder OPT_OUTPUT_FOLDER
                         Optional Output Folder?
-  -eazy EAZY_OUTPUT_FILE, --eazy_output_file EAZY_OUTPUT_FILE
-                        Analyze EAZY output?
-  -bpz BPZ_OUTPUT_FILE, --bpz_output_file BPZ_OUTPUT_FILE
-                        Analyze BPZ output?
-  -lep LEPHARE_OUTPUT_FILE, --lephare_output_file LEPHARE_OUTPUT_FILE
-                        Analyze Le Phare output?
-  -zeb ZEBRA_OUTPUT_FILE, --zebra_output_file ZEBRA_OUTPUT_FILE
-                        Analyze Zebra output?
   -minz MINIMUM_Z, --minimum_z MINIMUM_Z
                         Minimum Redshift for Analysis
   -maxz MAXIMUM_Z, --maximum_z MAXIMUM_Z
@@ -229,6 +235,9 @@ optional arguments:
   -mp, --make_plots     Make Plots?
   -outliers             Calculate Catastrophic Outliers?
   -pointdensity         Make Point Density Plots?
+  -multiple             Calculate Multiple Photo-z Solutions?
+  -kde                  Use a kde on the chi-square values to calculate
+                        multiple solutions?
   -jaguar JAGUAR_PATH, --jaguar_path JAGUAR_PATH
                         Path to JAGUAR Catalogs?
   -jparam JAGUAR_PARAM, --jaguar_param JAGUAR_PARAM
@@ -236,45 +245,35 @@ optional arguments:
 ```
 
 `% python ComparePhotoZ_to_SpecZ.py -input /Path/To/Input/Noisy/Photometry/all_fluxes_5_1_18_noisy.dat -nrcf NRC_F200W -snrl 5 -eazy /Path/To/EAZY/output/photz.zout -jaguar /Path/To/Your/Mock_Catalog_Files/ -jparam sSFR -mp -outliers -outf /Path/To/Optional/Output/Folder/`
+`% python ComparePhotoZ_to_SpecZ.py -input /Path/To/Input/Noisy/Photometry/all_fluxes_5_1_18_noisy.dat -nrcf NRC_F200W -eazyqz 3.0 -eazyprob 0.0 -eazy /Path/To/EAZY/output/photz.zout -multiple -kde -jaguar /Path/To/Your/Mock_Catalog_Files/ -jparam sSFR -mp -outliers -outf /Path/To/Optional/Output/Folder/`
 
 In this example, we point to the full set of noisy photometry from `Subsample_to_NoisySubsample.py`, and
-then I specify the SNR filter, and the SNR level, for files that cut down on noisy, low
-SNR objects. Then I specify that I want to do an EAZY analysis by pointing to the EAZY
-output file. I then point to the JAGUAR mock file and specify a galaxy parameter
+then I specify a NIRCam filter for printing out the SNR information. Then I specify that I want
+to focus on objects with `q_z < 3`, and `prob_z > 0.0`. I could also put in `-eazyqz_zrange '6.0, 3.0, 15.0, 7.5'`
+which would do `q_z < 3` for (zphot = 0 - 6) and `q_z < 7.5` for (zphot = 6 - 15.0). 
+
+Next, we point to the EAZY output file, and set the flags to find multiple chi-square
+solutions, using a kde method. I also provide the JAGUAR file, and the parameter
 for making spec-z vs. photo-z plots colored by that parameter. Next, I specify
-that we'd like to make the plots instead of just producing statistics, and I say that I
-want to produce outlier files of the objects with `delta_z > 0.15`. I then specify the
+that we'd like to make the plots instead of just producing statistics, and I then specify the
 optional output folder for putting all of the files.  
 
 The statistics that are produced are:
 
 ```
 ------------------------------------
-ALL OBJECTS (N = 117763)
- bias = -0.000 +/- 1.048
- sigma_68 = 0.118
- NMAD = 0.071
- fraction (> 0.15) = 0.273
+ALL OBJECTS (N = 117981)
+ bias = -0.017 +/- 1.069
+ sigma_68 = 0.124
+ NMAD = 0.074
+ fraction (> 0.15) = 0.283
 ------------------------------------
-NRC_F200W_SNR > 5.0 (N = 71757)
- bias = 0.009 +/- 0.231
- sigma_68 = 0.048
- NMAD = 0.037
- fraction (> 0.15) = 0.110
+prob_z > 0.0, q_z < 3.0 (N = 55423)
+ bias = 0.005 +/- 0.122
+ sigma_68 = 0.034
+ NMAD = 0.029
+ fraction (> 0.15) = 0.043
 ------------------------------------
-NRC_F200W_SNR > 5.0, HIGH PROBABILITY (N = 58825)
- bias = 0.012 +/- 0.127
- sigma_68 = 0.041
- NMAD = 0.033
- fraction (> 0.15) = 0.080
-------------------------------------
-NRC_F200W_SNR > 5.0, HIGH PROBABILITY, LOW Q_Z (N = 48622)
- bias = 0.008 +/- 0.075
- sigma_68 = 0.032
- NMAD = 0.028
- fraction (> 0.15) = 0.030
-------------------------------------
-
 ```
 
 The first is the bias, which is the average and standard deviation of 
@@ -282,10 +281,7 @@ The first is the bias, which is the average and standard deviation of
 that encompasses 68% of the residuals around 0. NMAD is Normalized Median Absolute Deviation
 of the residuals, which is defined as `NMAD(delta_z) = 1.48 * Median(abs(delta_z))`. Then
 there's the fraction of outliers with `abs(delta_z) > 0.15`. This is done for all objects, 
-those above the given SNR value, and then those with various photo-z code flags.
-
-Note: I would try this out with a SNR limit of 0, since many codes, like BPZ and EAZY,
-have flags that do an excellent job discerning good fits. 
+and then those with various photo-z code flags.
 
 ### `Explore_Outliers.py`
 This script allows you to look at the galaxy properties of individual selected outliers.
@@ -402,6 +398,68 @@ look at how these colors can be used to select galaxies at `z > 7.0` by explorin
 color cuts with a slope of 0.2, for those objects with SNR > 5.0 in `NRC_F115W` and `NRC_F150W`
 filters. Finally, it plots to the screen instead of saving a plot to disk. 
 
+
+### `NoisySubsample_to_ColorCutAnalysis.py`
+This script allows you to explore how objects detected at or above a given SNR in two 
+red filters (f2 and f3), can select for dropout candidate galaxies above a given redshift
+(often the redshift where the Lyman break enters the f1 filter). The spectroscopic redshift
+distribution is shown for galaxies selected with these color cuts, and the user can specify
+a distribution in a given galaxy parameter (like stellar mass) to see what types of
+interloper objects are being selected with a given red color. The user can also specify
+a rejection filter and SNR such that the object should not be detected above that significance
+for it to count as a dropout candidate.
+```
+usage: NoisySubsample_to_ColorCutAnalysis.py [-h] -in INPUT_FILE -f1 FILTER1
+                                             -f2 FILTER2 -f3 FILTER3 -clim
+                                             CLIMIT [-snr SNR]
+                                             [-maglim MAGLIM] [-bf BFILTER]
+                                             [-bsnr BSNR]
+                                             [-outf OPT_OUTPUT_FOLDER] -zlim
+                                             ZLIMIT [-ps] [-verb] [-prout]
+                                             [-hp HISTPARAM] [-xclim XCLIMIT]
+
+optional arguments:
+  -h, --help            show this help message and exit
+  -in INPUT_FILE, --inputfile INPUT_FILE
+                        Input file with noisy fluxes
+  -f1 FILTER1, --filter1 FILTER1
+                        Filter 1
+  -f2 FILTER2, --filter2 FILTER2
+                        Filter 2
+  -f3 FILTER3, --filter3 FILTER3
+                        Filter 3
+  -clim CLIMIT, --climit CLIMIT
+                        Color Limit?
+  -snr SNR, --snr SNR   Filter SNR (default = 0.0)
+  -maglim MAGLIM, --maglim MAGLIM
+                        Magnitude Limit (will supersede SNR limits)
+  -bf BFILTER, --bfilter BFILTER
+                        X-Axis Filter 1
+  -bsnr BSNR, --bsnr BSNR
+                        Blue Filter SNR (default = 0.0)
+  -outf OPT_OUTPUT_FOLDER, --opt_output_folder OPT_OUTPUT_FOLDER
+                        Optional Output Folder?
+  -zlim ZLIMIT, --zlimit ZLIMIT
+                        Redshift Limit?
+  -ps, --plot_to_screen
+                        Display Plot on Screen (Don't Save)?
+  -verb, --verbose      Verbose Mode?
+  -prout, --proutput    Print the output objects?
+  -hp HISTPARAM, --hparam HISTPARAM
+                        Galaxy Parameter for Histogram?
+  -xclim XCLIMIT, --xclimit XCLIMIT
+                        Upper limit on filter2 - filter3 color?
+```
+
+`% python -W ignore NoisySubsample_to_ColorCutAnalysis.py -in /Path/To/Noisy/Output/File.fits -bf HST_F775W -f1 NRC_F090W -f2 NRC_F115W -f3 NRC_F150W -clim 1.9 -snr 5.0 -bsnr 2.0 -zlim 5.6 -hp mStar -xclim 1.0`
+
+In this example, the Noisy catalog is specified with `-in`, and then the script looks
+at objects with F115W and F150W fluxes above a SNR of 5.0, and with a F775W SNR less
+then 2.0. It then finds all objects with F090W - F115W > 5.0, and F115W - F150W < 1.0, 
+and explores how many are at z > 5.6 vs z < 5.6 (the wavelength where the Lyman break 
+enters the F090W filter), and plots the spectroscopic redshift histogram of these two samples. 
+It also plots a mass histogram showing the mass distribution of these two samples. You could
+also print the output objects to the screen if the sample is small enough. 
 
 
 ### `JAGUAR_plot_SEDs.py`

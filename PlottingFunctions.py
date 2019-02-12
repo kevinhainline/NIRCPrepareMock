@@ -5,8 +5,10 @@ import argparse
 import numpy as np
 #import seaborn as sns
 from matplotlib.colors import LogNorm
+from scipy.interpolate import interp1d
 #import matplotlib
 import matplotlib.pyplot as plt
+import astropy.stats
 from astropy.io import fits
 from astropy.io import ascii
 from astropy.table import Table
@@ -502,7 +504,7 @@ def outlier_fraction_vs_mag(z_spec, z_phot, magnitude_values, name, filtername, 
 	plt.xlabel(filtername+' magnitude')
 	plt.ylabel('f$_{outliers}$')
 	plt.plot([24, 32],[0, 0], color = 'black')
-	plt.axis([24, 32, -0.05, 0.3])
+	plt.axis([24, 32, -0.05, 0.7])
 	plt.savefig(name, dpi = 300)
 
 
@@ -556,4 +558,102 @@ def outlier_fraction_vs_redshift(z_spec, z_phot, name, title_for_plot):
 	max_y = np.max(catastrophic_outlier_fraction_z)
 	#plt.axis([0, 15, -0.05, max_y + (2)*max_y])
 	plt.axis([0, 15, -0.05, 0.3])
+	plt.savefig(name, dpi = 300)
+
+def q_z_analysis_plots(z_spec, z_phot, q_z, limit_value, name, title_for_plot):
+	q_z_limit_values = np.arange(0.0,20.2,0.2)
+	residual_all = (z_spec - z_phot) / (1.0 + z_spec)
+	
+	n_objects_values = np.zeros(len(q_z_limit_values)-1)
+	residual_median_values = np.zeros(len(q_z_limit_values)-1)
+	residual_mean_values = np.zeros(len(q_z_limit_values)-1)
+	residual_stdev_values = np.zeros(len(q_z_limit_values)-1)
+	residual_68_values = np.zeros(len(q_z_limit_values)-1)
+	NMAD_values = np.zeros(len(q_z_limit_values)-1)
+	fraction_gt_15_values = np.zeros(len(q_z_limit_values)-1)
+	
+	for z in range(0, len(q_z_limit_values)-1):
+		good_objects = np.where(q_z < q_z_limit_values[z+1])[0]
+		n_objects_values[z] = len(good_objects)
+		residuals = (z_spec[good_objects] - z_phot[good_objects]) / (1.0 + z_spec[good_objects])
+		residual_68_values[z] = residuals_68(residuals)
+		NMAD_values[z] = 1.48 * astropy.stats.median_absolute_deviation(residuals)
+		fraction_gt_15_values[z] = len(np.where(abs(residuals) > 0.15)[0])*1.0/len(abs(residuals))*1.0
+	
+	for z in range(0, len(q_z_limit_values)-1):
+		good_objects = np.where((q_z >= q_z_limit_values[z]) & (q_z < q_z_limit_values[z+1]))[0]
+		residuals = (z_spec[good_objects] - z_phot[good_objects]) / (1.0 + z_spec[good_objects])
+		residual_median_values[z] = np.median(residuals)
+		residual_mean_values[z] = np.mean(residuals)
+		residual_stdev_values[z] = np.std(residuals)
+	
+	fig = plt.figure(figsize=(20, 10))
+	
+	ax1 = plt.subplot2grid((2, 4), (0, 0), colspan=2, rowspan=2) #fig.add_subplot(221)
+	ax1.scatter(q_z, residual_all, s = 1, color = 'black', edgecolor = None, alpha = 0.1, label = 'All Objects')
+	test_objects = np.where(q_z < limit_value)[0]
+	ax1.scatter(q_z[test_objects], residual_all[test_objects], s = 1, color = 'green', edgecolor = None, label = 'Objects with $Q_{z}$ < '+str(limit_value) )
+	#ax1.scatter(q_z_limit_values[1:len(q_z_limit_values)]-0.5, residual_mean_values, s = 8, color = 'orange', edgecolor = None)
+	ax1.scatter(q_z_limit_values[1:len(q_z_limit_values)]-0.5, residual_median_values, s = 8, color = 'red', edgecolor = None, label = 'Median Values')
+	ax1.errorbar(q_z_limit_values[1:len(q_z_limit_values)]-0.5, residual_mean_values, yerr = residual_stdev_values, markersize = 8, color = 'blue', edgecolor = None, alpha = 0.5, label = 'Average Values')
+	ax1.set_xlabel('$Q_{z}$', fontsize=15)
+	ax1.set_ylabel('<$z_{spec}-z_{phot}$)/(1+$z_{spec}$)>', fontsize=15)
+	ax1.set_xlim(0,20)
+	ax1.set_ylim(-5,1)
+	ax1.plot([0,20], [0,0], color = 'black')
+	ax1.text(0.95, 0.05, title_for_plot,
+	     horizontalalignment='right',
+	     verticalalignment='center',
+	     transform = ax1.transAxes)
+	ax1.legend()
+
+	ax2 = plt.subplot2grid((2, 4), (0, 2)) #fig.add_subplot(221)
+	ax2.scatter(q_z_limit_values[1:len(q_z_limit_values)], n_objects_values, s = 8, color = 'red', edgecolor = None, zorder=10)
+	ax2.set_xlabel('Maximum $Q_{z}$', fontsize=10)
+	ax2.set_ylabel('Number of Objects', fontsize=10)
+	ax2.axvline(x=limit_value, alpha = 0.5, color = 'green')
+	f2 = interp1d(q_z_limit_values[1:len(q_z_limit_values)], n_objects_values, kind='cubic')
+	ax2.axhline(y=f2(limit_value), alpha = 0.5, color = 'green')
+	ax2.text(0.95, 0.05,'For $Q_{z}$ < '+str(limit_value)+', there are '+str(round(f2(limit_value),0))+' Objects',
+	     horizontalalignment='right',
+	     verticalalignment='center',
+	     transform = ax2.transAxes)
+
+	ax3 = plt.subplot2grid((2, 4), (0, 3)) #fig.add_subplot(221)
+	ax3.scatter(q_z_limit_values[1:len(q_z_limit_values)], residual_68_values, s = 8, color = 'red', edgecolor = None, zorder=10)
+	ax3.set_xlabel('Maximum $Q_{z}$', fontsize=10)
+	ax3.set_ylabel('$\sigma_{68}$', fontsize=10)
+	ax3.axvline(x=limit_value, alpha = 0.5, color = 'green')
+	f2 = interp1d(q_z_limit_values[1:len(q_z_limit_values)], residual_68_values, kind='cubic')
+	ax3.axhline(y=f2(limit_value), alpha = 0.5, color = 'green')
+	ax3.text(0.95, 0.05,'For $Q_{z}$ < '+str(limit_value)+', $\sigma_{68}$ = '+str(round(f2(limit_value),4)),
+	     horizontalalignment='right',
+	     verticalalignment='center',
+	     transform = ax3.transAxes)
+
+	ax4 = plt.subplot2grid((2, 4), (1, 2)) #fig.add_subplot(221)
+	ax4.scatter(q_z_limit_values[1:len(q_z_limit_values)], NMAD_values, s = 8, color = 'red', edgecolor = None, zorder=10)
+	ax4.set_xlabel('Maximum $Q_{z}$', fontsize=10)
+	ax4.set_ylabel('NMAD', fontsize=10)
+	ax4.axvline(x=limit_value, alpha = 0.5, color = 'green')
+	f2 = interp1d(q_z_limit_values[1:len(q_z_limit_values)], NMAD_values, kind='cubic')
+	ax4.axhline(y=f2(limit_value), alpha = 0.5, color = 'green')
+	ax4.text(0.95, 0.05,'For $Q_{z}$ < '+str(limit_value)+', NMAD = '+str(round(f2(limit_value),4)),
+	     horizontalalignment='right',
+	     verticalalignment='center',
+	     transform = ax4.transAxes)
+
+	ax5 = plt.subplot2grid((2, 4), (1, 3)) #fig.add_subplot(221)
+	ax5.scatter(q_z_limit_values[1:len(q_z_limit_values)], fraction_gt_15_values, s = 8, color = 'red', edgecolor = None, zorder=10)
+	ax5.set_xlabel('Maximum $Q_{z}$', fontsize=10)
+	ax5.set_ylabel('fraction > 0.15', fontsize=10)
+	ax5.axvline(x=limit_value, alpha = 0.5, color = 'green')
+	f2 = interp1d(q_z_limit_values[1:len(q_z_limit_values)], fraction_gt_15_values, kind='cubic')
+	ax5.axhline(y=f2(limit_value), alpha = 0.5, color = 'green')
+	ax5.text(0.95, 0.05,'For $Q_{z}$ < '+str(limit_value)+', fraction > 0.15 = '+str(round(f2(limit_value),4)),
+	     horizontalalignment='right',
+	     verticalalignment='center',
+	     transform = ax5.transAxes)
+	
+	plt.tight_layout()
 	plt.savefig(name, dpi = 300)

@@ -20,8 +20,8 @@ JAGUAR_path = '/Users/knh/Desktop/NIRCam/mock_catalog_for_public/'
 def FluxtoABMag(flux):
 	return (-5.0 / 2.0) * np.log10(flux) - 48.60
 
-region_width = 12.0#11.0 # In arcminutes
-region_height = 4.84#11.0 # In arcminutes
+region_width = 6.78#12.0#11.0 # In arcminutes
+region_height = 6.78#4.84#11.0 # In arcminutes
 region_area = region_width * region_height # In square arcminutes
 
 ######################

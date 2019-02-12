@@ -1,4 +1,5 @@
 import os
+import ast
 import sys
 import math
 import argparse
@@ -89,11 +90,15 @@ base_exposure_time_candels = np.array([])
 n_exposures_medium_nircam = np.array([ 5, 8, 8, 7, 5, 7, 5, 5, 8, 8])
 # Deep (Average) Survey Depth
 n_exposures_deep_nircam = np.array([ 0, 44, 58, 43, 28, 35, 22, 28, 44, 44])
+# User Survey Depth
+user_value = 65
+n_exposures_deep_user = np.array([ user_value, user_value, user_value, user_value, user_value, user_value, user_value, user_value, user_value, user_value])
 base_exposure_time_nircam = np.array([1385., 1385., 1385., 1385., 1385., 1385., 1385., 1385., 1385., 1385.])
 
 # currently using XDF
-n_exposures_deep = np.append(n_exposures_xdf, n_exposures_deep_nircam)
 n_exposures_medium = np.append(n_exposures_xdf, n_exposures_medium_nircam)
+n_exposures_deep = np.append(n_exposures_xdf, n_exposures_deep_nircam)
+n_exposures_user = np.append(n_exposures_xdf, n_exposures_deep_user)
 base_exposure_time = np.append(base_exposure_time_xdf, base_exposure_time_nircam)
 
 # Original Marcia XDF
@@ -180,6 +185,16 @@ parser.add_argument(
   required=False
 )
 
+# User Depths 
+parser.add_argument(
+  '-nircamuserdepths','--nircamuserdepths',
+  help="NIRCam User Defined Depths",
+  action="store",
+  type=str,
+  dest="nircamuserdepths",
+  required=False
+)
+
 args=parser.parse_args()
 
 if ((args.output_file.endswith('.txt')) or (args.output_file.endswith('.dat'))):
@@ -213,8 +228,15 @@ elif (args.nircam_depth == 'medium'):
 	#time = medium_time
 	time = base_exposure_time
 	n_exposures = n_exposures_medium
+elif (args.nircam_depth == 'user'):
+	#time = medium_time
+	if (args.nircamuserdepths):
+		n_exposures_deep_user = np.array(ast.literal_eval(args.nircamuserdepths))
+		n_exposures_user = np.append(n_exposures_xdf, n_exposures_deep_user)	
+	time = base_exposure_time
+	n_exposures = n_exposures_user
 else:
-	sys.exit("NIRCam depth should be deep or medium")
+	sys.exit("NIRCam depth should be deep or medium or user")
 
 output_file_name = args.output_file
 
@@ -458,7 +480,7 @@ for x in range(0, n_objects):
 
 		# NIRCam FILTERS AND FLUX ERROR ESTIMATES
 		if (filters[j] == 'NRC_F070W'):
-			if (args.nircam_depth == 'medium'):
+			if ((args.nircam_depth == 'medium') or (args.nircam_depth == 'user')):
 				filter_index = 5
 				final_number_filters = final_number_filters + 1
 				final_filters = np.append(final_filters, ['NRC_F070W'])
@@ -774,12 +796,12 @@ if (args.make_fits):
 	colnames[1] = 'redshift'
 
 	dtype[0] = 'I'
-	dtype[1] = 'd'
+	dtype[1] = 'f'
 	for j in range(0, final_number_filters):
 		colnames[(j+1)*2] = final_filters[j]
 		colnames[((j+1)*2)+1] = final_filters[j]+'_err'
-		dtype[(j+1)*2] = 'd'
-		dtype[((j+1)*2)+1] = 'd'
+		dtype[(j+1)*2] = 'f8'
+		dtype[((j+1)*2)+1] = 'f8'
 
 	catalogue_file = output_file_name
 	cat_file_full = np.loadtxt(catalogue_file)
