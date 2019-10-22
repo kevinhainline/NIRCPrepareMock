@@ -17,11 +17,11 @@ parser = argparse.ArgumentParser()
 
 # Filter file names for R, G, and B filters
 r_filtername = 'F200W'#'F356W'#
-g_filtername = 'F115W'#'F277W'#
-b_filtername = 'F090W'#'F200W'#
-r_name = 'goods_s_F200W_2018_08_29.fits'#'goods_s_F356W_2018_08_30.fits'#
-g_name = 'goods_s_F115W_2018_08_29.fits'#'goods_s_F277W_2018_08_29.fits'
-b_name = 'goods_s_F090W_2018_08_29.fits'#'goods_s_F200W_2018_08_29.fits'
+g_filtername = 'F150W'#'F277W'#
+b_filtername = 'F115W'#'F200W'#
+r_name = 'goods_s_F200W_2018_11_26.fits'#'goods_s_F356W_2018_08_30.fits'#
+g_name = 'goods_s_F150W_2018_11_26.fits'#'goods_s_F277W_2018_08_29.fits'
+b_name = 'goods_s_F115W_2018_11_26.fits'#'goods_s_F200W_2018_08_29.fits'
 
 # Lupton image stretch values, you should change
 # these if you're not super happy with the way the
@@ -233,12 +233,12 @@ rwcs = WCS(rhdu.header)
 
 # Open the g band image
 g = fits.open(g_name)[0].data
-ghdu = fits.open(b_name)[0]
+ghdu = fits.open(g_name)[0]
 gwcs = WCS(ghdu.header)
 
 # Open the b band image
 b = fits.open(b_name)[0].data
-bhdu = fits.open(g_name)[0]
+bhdu = fits.open(b_name)[0]
 bwcs = WCS(bhdu.header)
 
 if (args.rgblist):

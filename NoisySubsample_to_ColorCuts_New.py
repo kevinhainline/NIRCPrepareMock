@@ -13,24 +13,43 @@ from astropy.table import Table
 def FluxtoABMag(flux):
 	return (-5.0 / 2.0) * np.log10(flux) - 48.60
 
-
 # Define the cuts. 
 lineone_isvertical = 0
 lineslope_1 = 0
-#lineyintercept_1 = 0.75
-lineyintercept_1 = 1.3
-xvalue_1 = -9999
+lineyintercept_1 = 0.4
+xvalue_1 = -9000
 
 linetwo_isvertical = 0
-lineslope_2 = 0.5
-#lineyintercept_2 = 0.85
-lineyintercept_2 = 1.3
+lineslope_2 = 0.000000001
+lineyintercept_2 = 1.0
 xvalue_2 = -9999
 
 linethree_isvertical = 1
 lineslope_3 = -9999
 lineyintercept_3 = -9999
-xvalue_3 = 0.2
+xvalue_3 = 0.4
+
+original_cuts = 0
+if (original_cuts == 1):
+	# Define the cuts. 
+	lineone_isvertical = 0
+	#lineslope_1 = 0
+	lineslope_1 = -2.5
+	lineyintercept_1 = 0.3
+	#lineyintercept_1 = 1.3
+	xvalue_1 = -9999
+	
+	linetwo_isvertical = 0
+	lineslope_2 = 0.5
+	#lineyintercept_2 = -0.1
+	lineyintercept_2 = 0.9
+	#lineyintercept_2 = 1.3
+	xvalue_2 = -9999
+	
+	linethree_isvertical = 1
+	lineslope_3 = -9999
+	lineyintercept_3 = -9999
+	xvalue_3 = 0.2
 
 
 # Define your color cut selection in terms of the x and y colors of the first plot
@@ -272,7 +291,7 @@ parser.add_argument(
 
 # SNR Limit, Blue Filter? 
 parser.add_argument(
-  '-snrbf','--snrbf',
+  '-bsnr','--bsnr',
   help="Blue Rejection Filter SNR (default = 0.0)",
   action="store",
   type=float,
@@ -309,7 +328,8 @@ filter1 = args.filter1
 filter2 = args.filter2
 filter3 = args.filter3
 filter4 = args.filter4
-
+if (args.bluefilter):
+	bluefilter = args.bluefilter
 
 if (args.snrfilter):
 	snr_limit_one = args.snrfilter
@@ -322,7 +342,6 @@ else:
 	snr_limit_two = 0.0
 	snr_limit_three = 0.0
 	snr_limit_four = 0.0
-
 
 # Set the SNR limits on the filters
 if (args.snrfilter1):
@@ -337,7 +356,11 @@ if (args.snrfilter3):
 if (args.snrfilter4):
 	snr_limit_four = args.snrfilter4
 
-	
+if (args.snrbluefilter):
+	snr_limit_blue = args.snrbluefilter
+else:
+	snr_limit_blue = 1e10
+
 if (args.clean is False):
 
 	# Input Noisy Photometry
@@ -348,7 +371,7 @@ if (args.clean is False):
 	ID_values = fitsinput[1].data['ID']
 	redshifts = fitsinput[1].data['redshift']
 	number_objects = ID_values.size
-	
+		
 	filter_flux_one = fitsinput[1].data[filter1]
 	filter_flux_one_err = fitsinput[1].data[filter1+'_err']
 	filter_flux_two = fitsinput[1].data[filter2]
@@ -364,8 +387,17 @@ if (args.clean is False):
 	filter_flux_three_snr = filter_flux_three / filter_flux_three_err
 	filter_flux_four_snr = filter_flux_four / filter_flux_four_err
 
-	SNR_check_objects = np.where((filter_flux_one_snr > snr_limit_one) & (filter_flux_two_snr > snr_limit_two) 
-		& (filter_flux_three_snr > snr_limit_three) & (filter_flux_four_snr > snr_limit_four))[0]
+	if (args.bluefilter):
+		blue_filter_flux = fitsinput[1].data[bluefilter]
+		blue_filter_flux_err = fitsinput[1].data[bluefilter+'_err']
+		blue_filter_flux_snr = blue_filter_flux / blue_filter_flux_err
+
+		SNR_check_objects = np.where((blue_filter_flux_snr < snr_limit_blue) & (filter_flux_one_snr > snr_limit_one) 
+			& (filter_flux_two_snr > snr_limit_two) & (filter_flux_three_snr > snr_limit_three) & (filter_flux_four_snr > snr_limit_four))[0]
+
+	else:
+		SNR_check_objects = np.where((filter_flux_one_snr > snr_limit_one) & (filter_flux_two_snr > snr_limit_two) 
+			& (filter_flux_three_snr > snr_limit_three) & (filter_flux_four_snr > snr_limit_four))[0]
 
 	filter_one = FluxtoABMag(filter_flux_one[SNR_check_objects]*1e-23*1e-9)
 	filter_one[np.where(filter_flux_one[SNR_check_objects] < 0)[0]] = 99.00
@@ -503,18 +535,19 @@ if (args.clean is False):
 
 fig = plt.figure(figsize=(15, 8))
 plt.set_cmap('cubehelix')
-ax1 = fig.add_subplot(121)
+ax1 = plt.subplot2grid((3, 2), (0, 0), colspan=1, rowspan=3)
+#ax1 = fig.add_subplot(121)
 if (args.clean is True):
+	ax1.scatter(clean_filter_color_x[clean_color_selection], clean_filter_color_y[clean_color_selection], color = 'black', s = 15, label = 'Satisfies Color Cuts')
 	cax = ax1.scatter(clean_filter_color_x, clean_filter_color_y, c = catalog_all_redshifts, s = 3, label = 'All Objects')
-	ax1.scatter(clean_filter_color_x[clean_color_selection], clean_filter_color_y[clean_color_selection], color = 'red', s = 10, label = 'Satisfies Color Cuts')
 if (args.clean is False):
+	ax1.scatter(filter_color_x[noisy_color_selection], filter_color_y[noisy_color_selection], color = 'black', s = 15, label = 'Satisfies Color Cuts')
 	cax = ax1.scatter(filter_color_x, filter_color_y, c = redshifts[SNR_check_objects], s = 3, label = 'All Objects')
-	ax1.scatter(filter_color_x[noisy_color_selection], filter_color_y[noisy_color_selection], color = 'red', s = 10, label = 'Satisfies Color Cuts')
 cbar = fig.colorbar(cax, label = 'Redshift', orientation="horizontal")
 # Plot the Selection Region #
 if (len(selection_points_plot1) > 1):
 	for q in range(0, len(selection_points_plot1)-1):
-		ax1.plot([selection_points_plot1[q][0], selection_points_plot1[q+1][0]], [selection_points_plot1[q][1], selection_points_plot1[q+1][1]], color = 'blue')
+		ax1.plot([selection_points_plot1[q][0], selection_points_plot1[q+1][0]], [selection_points_plot1[q][1], selection_points_plot1[q+1][1]], color = 'red')
 # # # # # # # # # # # # # # #
 ax1.set_xlabel(filter3+' - '+filter4)
 ax1.set_ylabel(filter1+' - '+filter2)
@@ -522,7 +555,8 @@ ax1.axis([-1.0,1.0,-0.8,2.2])
 ax1.legend()
 
 if (args.comp_param):
-	ax3 = plt.subplot(122)
+	#ax3 = plt.subplot(122)
+	ax3 = plt.subplot2grid((3, 2), (0, 1), rowspan = 2)
 	parameter_name = args.comp_param
 	if (args.clean is True):
 		ax3.scatter(catalog_all_redshifts, catalog_all_comparison_parameter, s=2, c = 'black', alpha = 0.1, label = 'All Objects')
@@ -530,10 +564,38 @@ if (args.comp_param):
 	if (args.clean is False):
 		ax3.scatter(redshifts[SNR_check_objects], catalog_all_comparison_parameter[all_object_indices][SNR_check_objects], s=2, c = 'black', alpha = 0.1, label = 'All Objects')
 		ax3.scatter(redshifts[SNR_check_objects][noisy_color_selection], catalog_all_comparison_parameter[all_object_indices][SNR_check_objects][noisy_color_selection], s=8, c = 'red', label = 'Satisfies Color Cuts')
-	ax3.set_xlabel('Redshift')
+	#ax3.set_xlabel('Redshift')
 	ax3.set_ylabel(parameter_name)
+	ax3.set_xlim(0,15)
+	ax3.set_xticklabels([])
+
+	if (args.clean is False):
+		if ((snr_limit_two == snr_limit_three) & (snr_limit_three == snr_limit_four)):
+			SNR_text = filter2+', '+filter3+', '+filter4+' SNR > '+str(snr_limit_two)
+		else:
+			SNR_text = 'SNR ('+filter2+') > '+str(snr_limit_two)+', SNR ('+filter3+') > '+str(snr_limit_three)+', SNR ('+filter4+') > '+str(snr_limit_four)
+		
+		plt.text(0.95, 0.9, SNR_text, horizontalalignment='right', verticalalignment='center', color = 'red', transform=ax3.transAxes)
+		
+		if (args.bluefilter):
+			Blue_SNR_text = 'SNR ('+bluefilter+') < '+str(snr_limit_blue)
+			plt.text(0.95, 0.85, Blue_SNR_text, horizontalalignment='right', verticalalignment='center', color = 'blue', transform=ax3.transAxes)
+
+	redshift_bins = np.arange(0,15,0.2)
+	ax4 = plt.subplot2grid((3, 2), (2, 1))
+	if (args.clean is True):
+		ax4.hist(catalog_all_redshifts, bins = redshift_bins, color = 'black', alpha = 0.1, label = 'All Objects')
+		ax4.hist(catalog_all_redshifts[clean_color_selection], bins = redshift_bins, color = 'red', label = 'Satisfies Color Cuts')
+	if (args.clean is False):
+		ax4.hist(redshifts[SNR_check_objects], bins = redshift_bins, color = 'black', alpha = 0.1, label = 'All Objects')
+		ax4.hist(redshifts[SNR_check_objects][noisy_color_selection], bins = redshift_bins, color = 'red', label = 'Satisfies Color Cuts')
+	ax4.set_xlabel('Redshift')
+	ax4.set_xlim(0,15)
+	ax4.set_ylabel('Number of Objects')
+
 else:
-	ax3 = plt.subplot(122)
+	ax3 = plt.subplot2grid((3, 2), (0, 1), rowspan = 3)
+	#ax3 = plt.subplot(122)
 	redshift_bins = np.arange(0,15,0.2)
 	if (args.clean is True):
 		ax3.hist(catalog_all_redshifts, bins = redshift_bins, color = 'black', alpha = 0.1, label = 'All Objects')
@@ -543,11 +605,25 @@ else:
 		ax3.hist(redshifts[SNR_check_objects][noisy_color_selection], bins = redshift_bins, color = 'red', label = 'Satisfies Color Cuts')
 	ax3.set_xlabel('Redshift')
 	ax3.set_ylabel('Number of Objects')
+
+	if (args.clean is False):
+		if ((snr_limit_two == snr_limit_three) & (snr_limit_three == snr_limit_four)):
+			SNR_text = filter2+', '+filter3+', '+filter4+' SNR > '+str(snr_limit_two)
+		else:
+			SNR_text = 'SNR ('+filter2+') > '+str(snr_limit_two)+', SNR ('+filter3+') > '+str(snr_limit_three)+', SNR ('+filter4+') > '+str(snr_limit_four)
+	
+		plt.text(0.95, 0.9, SNR_text, horizontalalignment='right', verticalalignment='center', color = 'red', transform=ax3.transAxes)
+	
+		if (args.bluefilter):
+			Blue_SNR_text = 'SNR ('+bluefilter+') < '+str(snr_limit_blue)
+			plt.text(0.95, 0.85, Blue_SNR_text, horizontalalignment='right', verticalalignment='center', color = 'blue', transform=ax3.transAxes)
 	
 
 # Plot to screen or Make a File? 
 if (args.plot_to_screen):
+	plt.tight_layout()
 	plt.show()
 else:
+	plt.tight_layout()
 	plt.savefig(output_filename, dpi = 200)
 

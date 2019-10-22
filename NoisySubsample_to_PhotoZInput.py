@@ -7,14 +7,14 @@ import argparse
 from astropy.io import fits
 from astropy.table import Table
 
-filter_file_name = 'NoisySubsample_to_PhotoZInput_filters.dat'
-#filter_file_name = 'NoisySubsample_to_PhotoZInput_medium_filters.dat'
-#filter_file_name = 'NoisySubsample_to_PhotoZInput_Christopher_filters.dat'
-# The filters to be used in the JADES survey, and also the 
+#filter_file_name = 'NoisySubsample_to_PhotoZInput_filters.dat'
+filter_file_name = 'NoisySubsample_to_PhotoZInput_medium_filters.dat'
+# The filters to be used in the output file, and also the 
 # filters that are used in the noisy files. 
-#noisy_jades_filters = ['HST_F435W', 'HST_F606W', 'HST_F775W', 'HST_F814W', 'HST_F850LP', 'NRC_F070W', 'NRC_F090W', 'NRC_F115W', 'NRC_F150W', 'NRC_F200W', 'NRC_F277W', 'NRC_F335M', 'NRC_F356W', 'NRC_F410M', 'NRC_F444W']
-noisy_jades_filters = ['HST_F435W', 'HST_F606W', 'HST_F775W', 'HST_F814W', 'HST_F850LP', 'NRC_F090W', 'NRC_F115W', 'NRC_F150W', 'NRC_F200W', 'NRC_F277W', 'NRC_F335M', 'NRC_F356W', 'NRC_F410M', 'NRC_F444W']
-number_jades_filters = len(noisy_jades_filters)
+#noisy_output_filters = ['HST_F435W', 'HST_F606W', 'HST_F775W', 'HST_F814W', 'HST_F850LP', 'NRC_F070W', 'NRC_F090W', 'NRC_F115W', 'NRC_F150W', 'NRC_F200W', 'NRC_F277W', 'NRC_F335M', 'NRC_F356W', 'NRC_F410M', 'NRC_F444W']
+#noisy_output_filters = ['HST_F435W', 'HST_F606W', 'HST_F775W', 'HST_F814W', 'HST_F850LP', 'NRC_F090W', 'NRC_F115W', 'NRC_F150W', 'NRC_F200W', 'NRC_F277W', 'NRC_F335M', 'NRC_F356W', 'NRC_F410M', 'NRC_F444W']
+noisy_output_filters = ['NRC_F090W', 'NRC_F115W', 'NRC_F150W', 'NRC_F200W', 'NRC_F277W', 'NRC_F335M', 'NRC_F356W', 'NRC_F410M', 'NRC_F444W']
+number_output_filters = len(noisy_output_filters)
 
 ######################
 # Required Arguments #
@@ -173,8 +173,8 @@ else:
 		ID_values[n] = full_input_file[n][0]
 		redshifts[n] = full_input_file[n][1]
 		for j in range(0, number_filters):
-			for k in range(0, number_jades_filters):
-				if (noisy_jades_filters[k] == header_filters[j]):
+			for k in range(0, number_output_filters):
+				if (noisy_output_filters[k] == header_filters[j]):
 					fluxes_all[n,j] = full_input_file[n,(k+1)*2]
 					errors_all[n,j] = full_input_file[n,((k+1)*2)+1]
 

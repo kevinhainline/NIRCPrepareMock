@@ -20,8 +20,8 @@ JAGUAR_path = '/Users/knh/Desktop/NIRCam/mock_catalog_for_public/'
 def FluxtoABMag(flux):
 	return (-5.0 / 2.0) * np.log10(flux) - 48.60
 
-region_width = 6.78#12.0#11.0 # In arcminutes
-region_height = 6.78#4.84#11.0 # In arcminutes
+region_width = 3.29#6.78#12.0#11.0 # In arcminutes
+region_height = 3.29#6.78#4.84#11.0 # In arcminutes
 region_area = region_width * region_height # In square arcminutes
 
 ######################
@@ -107,9 +107,9 @@ parser.add_argument(
 # Blue Confirmation Filter
 parser.add_argument(
   '-bf','--bfilter',
-  help="X-Axis Filter 1",
-  action="store",
+  help="Blue Rejection Filter(s)",
   type=str,
+  action='append',
   dest="bfilter",
   required=False
 )
@@ -143,8 +143,6 @@ parser.add_argument(
   dest="zlimit",
   required=True
 )
-
-
 
 # Plot to Screen? 
 parser.add_argument(
@@ -195,6 +193,7 @@ parser.add_argument(
 
 args=parser.parse_args()
 
+
 # OPEN THE INPUT DATA FILE
 if (args.input_file.endswith('.fits')):
 	fitsinput = fits.open(args.input_file)
@@ -213,15 +212,24 @@ filter_flux_three = fitsinput[1].data[args.filter3]
 filter_flux_three_err = fitsinput[1].data[args.filter3+'_err']
 
 if (args.bfilter):
-	bfilter_flux_one = fitsinput[1].data[args.bfilter]
-	bfilter_flux_one_err = fitsinput[1].data[args.bfilter+'_err']
+	bfilter_fluxes = np.zeros([len(args.bfilter), len(fitsinput[1].data[args.bfilter[0]])])
+	bfilter_flux_errors = np.zeros([len(args.bfilter), len(fitsinput[1].data[args.bfilter[0]])])
+	for filt in range(0, len(args.bfilter)):
+		bfilter_fluxes[filt,:] = fitsinput[1].data[args.bfilter[filt]]
+		bfilter_flux_errors[filt,:] = fitsinput[1].data[args.bfilter[filt]+'_err']
+	filter_label = ' '
+	for filt in range(0, len(args.bfilter)):
+		filter_label = filter_label + args.bfilter[filt]+', '
+
 
 # Have to do a SNR check. 
 filter_flux_one_snr = filter_flux_one / filter_flux_one_err
 filter_flux_two_snr = filter_flux_two / filter_flux_two_err
 filter_flux_three_snr = filter_flux_three / filter_flux_three_err
 if (args.bfilter):
-	bfilter_flux_snr = bfilter_flux_one / bfilter_flux_one_err
+	bfilter_flux_snr = np.zeros([len(args.bfilter), len(fitsinput[1].data[args.bfilter[0]])])
+	for filt in range(0, len(args.bfilter)):
+		bfilter_flux_snr[filt,:] = bfilter_fluxes[filt,:] / bfilter_flux_errors[filt,:]
 
 if (args.snr):
 	snr_limit = args.snr
@@ -267,22 +275,16 @@ xlimitprint = 0
 #print "   "
 if (args.maglim):
 	maglimprint = 1
-	#print "For "+args.filter2+" and "+args.filter3+" mag < "+str(args.maglim)
 else:
 	snrlimprint = 1
-	#print "For "+args.filter2+" and "+args.filter3+" detections at SNR > "+str(snr_limit)
-#print "And a cut of "+args.filter1+" - "+args.filter2+" > "+str(args.climit)
 if (args.xclimit):
 	xlimitprint = 1
-	#print "And a cut of "+args.filter2+" - "+args.filter3+" < "+str(args.xclimit)
 
 if (args.zlimit):
 	objects_with_redshift_above_cut = np.where(redshifts_SNRcheck[objects_above_cut] >= args.zlimit)[0]
 	objects_with_redshift_below_cut = np.where(redshifts_SNRcheck[objects_above_cut] < args.zlimit)[0]
 	number_above_cut = len(objects_with_redshift_above_cut)/region_area
 	number_below_cut = len(objects_with_redshift_below_cut)/region_area
-	#print "There are "+str(round(number_above_cut,3))+" objects/square arcminute selected with z > "+str(args.zlimit)
-	#print "There are "+str(round(number_below_cut,3))+" objects/square arcminute selected with z < "+str(args.zlimit)
 
 if ((maglimprint == 1) & (xlimitprint == 0)):
 	print "# maglim ycolorcut zcut highzdensity lowzdensity"
@@ -300,9 +302,19 @@ if ((snrlimprint == 1) & (xlimitprint == 1)):
 # If you have a blueward filter, make sure that there's a nondetection
 if (args.bfilter):
 	if (args.maglim):
-		SNR_check_objects_blue = np.where((filter_two_mag_snr < args.maglim) & (filter_three_mag < args.maglim) & (bfilter_flux_snr < bsnr_limit))[0]
+		SNR_check_objects_blue_BelowMagLim = np.where((filter_two_mag_snr < args.maglim) & (filter_three_mag < args.maglim))[0]
+		for filt in range(0, len(args.bfilter)):
+			if (filt == 0):
+				SNR_check_objects_blue = np.intersect1d(SNR_check_objects_blue_BelowMagLim, np.where(bfilter_flux_snr[filt,:] < bsnr_limit)[0])				
+			else:
+				SNR_check_objects_blue = np.intersect1d(SNR_check_objects_blue, np.where(bfilter_flux_snr[filt,:] < bsnr_limit)[0])					
 	else:
-		SNR_check_objects_blue = np.where((filter_flux_two_snr > snr_limit) & (filter_flux_three_snr > snr_limit) & (bfilter_flux_snr < bsnr_limit))[0]
+		SNR_check_objects_blue_AboveSNRLim = np.where((filter_flux_two_snr > snr_limit) & (filter_flux_three_snr > snr_limit))[0]
+		for filt in range(0, len(args.bfilter)):
+			if (filt == 0):
+				SNR_check_objects_blue = np.intersect1d(SNR_check_objects_blue_AboveSNRLim, np.where(bfilter_flux_snr[filt,:] < bsnr_limit)[0])				
+			else:
+				SNR_check_objects_blue = np.intersect1d(SNR_check_objects_blue, np.where(bfilter_flux_snr[filt,:] < bsnr_limit)[0])					
 
 	# Now, select the y_filter magnitudes above the SNR check
 	filter_one_mag_SNRcheck_blue = FluxtoABMag(fitsinput[1].data[args.filter1][SNR_check_objects_blue]*1e-23*1e-9)
@@ -328,8 +340,9 @@ if (args.bfilter):
 		objects_with_redshift_below_cut_blue = np.where(redshifts_SNRcheck_blue[objects_above_cut_blue] < args.zlimit)[0]
 		number_above_cut_blue = len(objects_with_redshift_above_cut_blue)/region_area
 		number_below_cut_blue = len(objects_with_redshift_below_cut_blue)/region_area
-		#print "    ...and only "+str(round(number_above_cut_blue,3))+" objects/square arcminute selected with z > "+str(args.zlimit)+" (with "+args.bfilter+" SNR < "+str(bsnr_limit)+")"
-		#print "    ...and only "+str(round(number_below_cut_blue,3))+" objects/square arcminute selected with z < "+str(args.zlimit)+" (with "+args.bfilter+" SNR < "+str(bsnr_limit)+")"
+
+		print "    ...and only "+str(round(number_above_cut_blue,3))+" objects/square arcminute selected with z > "+str(args.zlimit)+" (with "+filter_label+" SNR < "+str(bsnr_limit)+")"
+		print "    ...and only "+str(round(number_below_cut_blue,3))+" objects/square arcminute selected with z < "+str(args.zlimit)+" (with "+filter_label+" SNR < "+str(bsnr_limit)+")"
 
 redshift_deltaz = 0.2
 
@@ -394,10 +407,8 @@ if (args.histparam):
 		for x in range(0, len(objects_with_redshift_below_cut_blue)):
 			objects_with_redshift_below_cut_blue_indices[x] = np.where(catalog_all_IDs == ID_values[SNR_check_objects_blue][objects_above_cut_blue][objects_with_redshift_below_cut_blue][x])[0][0]
 	
-	#print catalog_all_IDs[objects_with_redshift_above_cut_blue_indices]
 
 # Make the two plots. 
-#plt.clf()
 if (args.histparam):
 	plt.figure(figsize=(8, 11))
 	plt.subplot(211)
@@ -410,7 +421,12 @@ plt.bar(redshift_array[0:-1], redshift_hist[0] / region_area, width = redshift_d
 if (args.bfilter):
 	redshift_hist_blue = np.histogram(redshifts_SNRcheck_blue[objects_above_cut_blue], bins = redshift_array)
 	#plt.scatter(redshift_array[0:-1], redshift_hist_blue[0] / region_area, color = 'blue', label = '...and '+args.bfilter+' SNR < '+str(bsnr_limit))
-	plt.bar(redshift_array[0:-1], redshift_hist_blue[0] / region_area, width = redshift_deltaz, color = 'blue', label = '...and '+args.bfilter+' SNR < '+str(bsnr_limit))
+	blue_label_front = '...and'
+	blue_label_middle = ' '
+	for filt in range(0, len(args.bfilter)):
+		blue_label_middle = blue_label_middle + args.bfilter[filt]+', '
+	blue_label = blue_label_front+blue_label_middle+' SNR < '+str(bsnr_limit)
+	plt.bar(redshift_array[0:-1], redshift_hist_blue[0] / region_area, width = redshift_deltaz, color = 'blue', label = blue_label)
 
 plt.xlabel('Spectroscopic Redshift')
 plt.ylabel('N/Area (square arcmin) in bins of delta_z = '+str(redshift_deltaz))

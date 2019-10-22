@@ -382,7 +382,7 @@ plt.legend()
 # Make the plot! 
 comparison_parameter = catalog_all_comparison_parameter
 parameter_name = args.comp_param#'[OIII] 5007 EW'#'sSFR'
-x_limits = [-3, 3]
+x_limits = [-1.5, 1.5]
 #y_limits = [-9.0, -7.8]
 y_limits = [np.min(comparison_parameter[all_object_indices][SNR_check_objects]), np.max(comparison_parameter[all_object_indices][SNR_check_objects])]
 

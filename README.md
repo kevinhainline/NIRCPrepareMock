@@ -103,6 +103,7 @@ sersic index, and stacking individual images.
 ```
 usage: Subsample_to_NoisySubsample.py [-h] -in INPUT_FILE -out OUTPUT_FILE -ni
                                       NIRCAM_DEPTH -fi FILTERS_FILE [-mf]
+                                      [-nircamuserdepths NIRCAMUSERDEPTHS]
 
 optional arguments:
   -h, --help            show this help message and exit
@@ -115,6 +116,8 @@ optional arguments:
   -fi FILTERS_FILE, --filters_file FILTERS_FILE
                         Filters File Name
   -mf, --make_fits      Make Fits File?
+  -nircamuserdepths NIRCAMUSERDEPTHS, --nircamuserdepths NIRCAMUSERDEPTHS
+                        NIRCam User Defined Depths
 
 ```
 
@@ -123,8 +126,15 @@ optional arguments:
 In this example, the name of the input file is specified (text or .fits), and 
 the NIRCam depths are set. Next, the filters file is specified (any filter
 that is not in the CANDELs or JADES surveys are not used), and finally, the make 
-fits flag is set, so a fits file will also be created. 
+fits flag is set, so a fits file will also be created. You can also specify NIRCam depths
+in this way:
 
+`% python Subsample_to_NoisySubsample.py -in sf_output.fits -o sf_noisy.dat -ni user -nircamuserdepths '90, 90, 90, 90, 90, 90, 90, 90, 90, 90' -fi filters.dat -mf`
+
+In this way, you set the `-ni` flag to `user`, and then specify the user depths in
+each filter separately. In this example, you're stacking 90 images in each filter
+with a base exposure time set within the code in the `base_exposure_time_nircam_user` 
+array, which is currently set to 1385 seconds.
 
 ### `NoisySubsample_to_PhotoZInput.py`
 This script takes in the output files from `Subsample_to_NoisySubsample.py` and
@@ -467,7 +477,8 @@ This script, which is found in the `More_In_Prep_Scripts` directory, allows you 
 SF or Q (or both) SEDs from the JAGUAR catalog.
 ```
 usage: JAGUAR_plot_SEDs.py [-h] -in INPUT_FOLDER -sedin SED_INPUT_FOLDER
-                           [-SFID SF_ID] [-QID Q_ID]
+                           [-SFID SF_ID] [-QID Q_ID] [-filt] [-noLyA] [-abmag]
+                           [-sp]
 
 optional arguments:
   -h, --help            show this help message and exit
@@ -481,15 +492,19 @@ optional arguments:
                         Q Object ID
   -filt, --plot_filters
                         Plot the Filters on Top of the Plot?
+  -noLyA, --noLyA       Use the non-Lyman alpha photometry?
+  -abmag, --abmag       Plot in AB Magnitude Units?
+  -sp, --save_plot      Save plot to png?
 ```
 
 It would be perhaps run in this way:
 
-`% python JAGUAR_plot_SEDs.py -in /Path/To/Your/Mock_Catalog_Files/ -sedin /Path/To/Your/Mock_Catalog_SEDs/ -SFID 269865 -QID 309979 -filt`
+`% python JAGUAR_plot_SEDs.py -in /Path/To/Your/Mock_Catalog_Files/ -sedin /Path/To/Your/Mock_Catalog_SEDs/ -SFID 269865 -QID 309979 -filt -sp`
 
-This would plot the SF object 269865 and the Q object 309979. You can specify one SF
-object or one Q object, or both, as in the example. Also, the `-filt` flag is set, which
-plots the HST and NIRCam filters on top of the SED. 
+This would plot the SF object 269865 and the Q object 309979, and save these to a png file. 
+You can specify one SF object or one Q object, or both, as in the example. Also, the `-filt` 
+flag is set, which plots the HST and NIRCam filters on top of the SED. By default, the code 
+plots in units of nJy, but you can specify AB magnitudes with the `-abmag` flag.
 
 
 ### `NIRCam_Mock_Image_Cutouts.py`

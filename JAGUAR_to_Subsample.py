@@ -229,6 +229,11 @@ full_sf_re_maj = sftestfits[1].data['Re_maj']
 full_sf_sersic_n = sftestfits[1].data['sersic_n']
 n_sf_objects = len(full_sf_IDs)
 
+# Lyman alpha version for the fluxes. 
+# Full star-forming catalogue, fits file
+#full_sf_mock_file = args.input_folder+'JADES_SF_mock_r1_v1.1_fluxes_noLya.fits'#'JADES_SF_mock_'+JAGUAR_version+'.fits'
+#sftestfits = fits.open(full_sf_mock_file)
+
 # Get the star-forming fluxes. 
 sf_filt_flux = np.zeros([number_filters, n_sf_objects])
 for j in range(0, number_filters):
@@ -278,6 +283,7 @@ q_ID_value = 1
 
 if (use_IDs == 1):
 	for j in range(0, n_input_ID_numbers):
+		object_fluxes = np.zeros(number_filters)
 		if (input_ID_numbers[j] <= np.max(full_sf_IDs)):
 			object_ID = input_ID_numbers[j]
 			object_index = np.where(full_sf_IDs == object_ID)[0][0]
@@ -285,7 +291,6 @@ if (use_IDs == 1):
 			object_logmass = full_sf_logmass[object_index]
 			object_re_maj = full_sf_re_maj[object_index]
 			object_sersic_n = full_sf_sersic_n[object_index]
-			object_fluxes = np.zeros(number_filters)
 			for z in range(0, number_filters):
 				object_fluxes[z] = sf_filt_flux[z][object_index]
 		else:

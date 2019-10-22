@@ -349,10 +349,10 @@ if (args.eazy_output_folder):
 		#plt.axvspan(l68[index_value[0]], u68[index_value[0]], color = 'green', alpha = 0.05)
 		#plt.axvspan(l95[index_value[0]], u95[index_value[0]], color = 'green', alpha = 0.1)
 		#plt.axvspan(l99[index_value[0]], u99[index_value[0]], color = 'green', alpha = 0.15)
-		plt.axvspan(z_spec[idx]-0.05, z_spec[idx]+0.05, color = 'green')
-		plt.axvspan(z_phot[idx]-0.05, z_phot[idx]+0.05, color = 'blue')
-		plt.text(z_spec[idx]+0.15, 0.8*max(chi2fit[:,idx]), 'z$_{spec}$ = '+str(z_spec[idx]), color = 'green', rotation = 90, alpha = 0.5)
-		plt.text(z_phot[idx]+0.15, 0.8*max(chi2fit[:,idx]), 'z$_{phot}$ = '+str(z_phot[idx]), color = 'blue', rotation = 90, alpha = 0.5)
+		plt.axvspan(z_spec[idx]-0.05, z_spec[idx]+0.05, color = 'blue')
+		plt.axvspan(z_phot[idx]-0.05, z_phot[idx]+0.05, color = 'green')
+		plt.text(z_spec[idx]+0.15, 0.8*max(chi2fit[:,idx]), 'z$_{spec}$ = '+str(z_spec[idx]), color = 'blue', rotation = 90, alpha = 0.5)
+		plt.text(z_phot[idx]+0.15, 0.8*max(chi2fit[:,idx]), 'z$_{phot}$ = '+str(z_phot[idx]), color = 'green', rotation = 90, alpha = 0.5)
 		
 		plt.savefig(args.eazy_output_folder+str(int(ID_numbers[z]))+'_SED.png', dpi = 300)
 
