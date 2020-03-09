@@ -10,8 +10,7 @@ low redshift, low mass objects). It's run with a variety of flags.
 ```
 usage: JAGUAR_to_Subsample.py [-h] -in INPUT_FOLDER [-iID INPUTIDS]
                               [-sfo SF_OUTPUT_FILENAME]
-                              [-qo Q_OUTPUT_FILENAME] [-iIDf INPUTIDFILENAME]
-                              [-rid RANDOMIZE_IDS]
+                              [-qo Q_OUTPUT_FILENAME] [-rid RANDOMIZE_IDS]
                               [-nz NUMBER_PER_REDSHIFT_BIN] [-fi FILTERS_FILE]
                               [-co COMBINE_FILENAME] [-mf]
 
@@ -25,8 +24,6 @@ optional arguments:
                         SF Output Filename
   -qo Q_OUTPUT_FILENAME, --qoutputfilename Q_OUTPUT_FILENAME
                         Q Output Filename
-  -iIDf INPUTIDFILENAME, --inputIDfilename INPUTIDFILENAME
-                        Filename when using an ID numbers file?
   -rid RANDOMIZE_IDS, --randomizeids RANDOMIZE_IDS
                         Randomize the ID Numbers? (1 = Yes, 0 = No)
   -nz NUMBER_PER_REDSHIFT_BIN, --nobjectsperz NUMBER_PER_REDSHIFT_BIN
@@ -55,7 +52,7 @@ It is also possible to supply a list of IDs to create a subsample, using the
 
 `% python JAGUAR_to_Subsample.py -in /Path/To/Your/Mock_Catalog_Files/ -rid 0 -iID your_list_of_IDs.dat -fi filters.dat -mf`
 
-This will produce the file `ID_output_list.dat` (and a fits version if the `-mf` flag is
+This will produce the file `your_list_of_IDs_subsample.dat` (and a fits version if the `-mf` flag is
 set).
 
 ### `JAGUAR_to_Region_Sample.py`
@@ -118,23 +115,23 @@ optional arguments:
   -mf, --make_fits      Make Fits File?
   -nircamuserdepths NIRCAMUSERDEPTHS, --nircamuserdepths NIRCAMUSERDEPTHS
                         NIRCam User Defined Depths
-
 ```
 
 `% python Subsample_to_NoisySubsample.py -in sf_output.fits -o sf_noisy.dat -ni deep -fi filters.dat -mf`
 
 In this example, the name of the input file is specified (text or .fits), and 
-the NIRCam depths are set. Next, the filters file is specified (any filter
-that is not in the CANDELs or JADES surveys are not used), and finally, the make 
-fits flag is set, so a fits file will also be created. You can also specify NIRCam depths
-in this way:
+the NIRCam depths are set. Next, the filters file is specified (currently the filters that
+are used are restricted to a subsample of HST/ACS and NIRCam WIDE and MEDIUM filters), and 
+finally, the make fits flag is set, so a fits file will also be created. You can also 
+specify NIRCam depths in this way:
 
 `% python Subsample_to_NoisySubsample.py -in sf_output.fits -o sf_noisy.dat -ni user -nircamuserdepths '90, 90, 90, 90, 90, 90, 90, 90, 90, 90' -fi filters.dat -mf`
 
 In this way, you set the `-ni` flag to `user`, and then specify the user depths in
 each filter separately. In this example, you're stacking 90 images in each filter
 with a base exposure time set within the code in the `base_exposure_time_nircam_user` 
-array, which is currently set to 1385 seconds.
+array, which is currently set to 1385 seconds (corresponding to the DEEP8 readout pattern
+with N_groups = 7)
 
 ### `NoisySubsample_to_PhotoZInput.py`
 This script takes in the output files from `Subsample_to_NoisySubsample.py` and
