@@ -388,7 +388,7 @@ if ((args.SF_ID is not None)):
 		# NIRCam 
 		ax1.scatter(apparent_centroids_nircam, sf_apparent_ABmag_nircam, linewidths = 0, color = nircam_filter_colors, s = 80, zorder = 10)
 		
-		# NIRCam 
+		# IRAC 
 		ax1.scatter(apparent_centroids_IRAC, sf_apparent_ABmag_IRAC, linewidths = 0, color = 'black', s = 80, zorder = 10)
 		
 		# SED
@@ -432,7 +432,7 @@ if ((args.SF_ID is not None)):
 		# NIRCam 
 		ax1.scatter(apparent_centroids_nircam, sf_apparent_fnu_nJy_nircam, linewidths = 0, color = nircam_filter_colors, s = 80, zorder = 10)
 		
-		# NIRCam 
+		# IRAC 
 		ax1.scatter(apparent_centroids_IRAC, sf_apparent_fnu_nJy_IRAC, linewidths = 0, color = 'black', s = 80, zorder = 10)
 		
 		# SED
@@ -443,9 +443,12 @@ if ((args.SF_ID is not None)):
 		flux_max = np.max(sf_apparent_fnu_nJy_nircam)
 		y_max = flux_max
 		
-		if (y_min < 1.0):
+		if (y_max < 1.0):
 			y_max = 1.0
-		
+
+		if (y_min < 1e-1):
+			y_min = 1e-1
+
 		if (args.plot_filters):
 			for filter in range(0, n_filters):
 				ind_filter_file = filter_link[filter]

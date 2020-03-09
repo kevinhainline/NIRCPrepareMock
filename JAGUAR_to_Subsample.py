@@ -69,16 +69,6 @@ parser.add_argument(
   required=False
 )
 
-# ID Output Filename
-parser.add_argument(
-  '-iIDf','--inputIDfilename',
-  help= "Filename when using an ID numbers file?",
-  action="store",
-  type=str,
-  dest="inputIDfilename",
-  required=False
-)
-
 # Randomize IDs?
 parser.add_argument(
   '-rid','--randomizeids',
@@ -174,10 +164,15 @@ if (args.inputIDs):
 	input_ID_numbers = id_file[:]
 	n_input_ID_numbers = len(input_ID_numbers)
 	
-	if (args.inputIDfilename):
-		id_filenameroot = args.inputIDfilename
-	else:
-		id_filenameroot = 'ID_output_list'
+	id_filenameroot = args.inputIDs
+	
+	if id_filenameroot.endswith('.dat'):
+		id_filenameroot = id_filenameroot[:-4]
+	if id_filenameroot.endswith('.IDs'):
+		id_filenameroot = id_filenameroot[:-4]
+	
+	id_filenameroot = id_filenameroot + '_subsample'
+	
 	use_IDs = 1
 	make_sf = 0
 	make_q = 0
@@ -227,6 +222,7 @@ full_sf_redshifts = sftestfits[1].data['redshift']
 full_sf_logmass = sftestfits[1].data['mStar']
 full_sf_re_maj = sftestfits[1].data['Re_maj']
 full_sf_sersic_n = sftestfits[1].data['sersic_n']
+full_sf_axis_ratio = sftestfits[1].data['axis_ratio']
 n_sf_objects = len(full_sf_IDs)
 
 # Lyman alpha version for the fluxes. 
@@ -249,6 +245,7 @@ full_q_redshifts = qtestfits[1].data['redshift']
 full_q_logmass = qtestfits[1].data['mStar']
 full_q_re_maj = qtestfits[1].data['Re_maj']
 full_q_sersic_n = qtestfits[1].data['sersic_n']
+full_q_axis_ratio = qtestfits[1].data['axis_ratio']
 n_q_objects = len(full_q_IDs)
 
 # Get the quiescent fluxes. 
@@ -259,19 +256,19 @@ for j in range(0, number_filters):
 # Open up the output files. 
 if (make_sf == 1):
 	sffile = open(sf_filenameroot+'.dat', 'w')
-	sffile.write('#ID    Redshift    Log(Mass)    Re_Maj    Sersic_n     ')
+	sffile.write('#ID    Redshift    Log(Mass)    Re_Maj    Sersic_n     axis_ratio     ')
 	for j in range(0, number_filters):
 		sffile.write(filters[j]+'    ')
 	sffile.write(' \n')
 if (make_q == 1):
 	qfile = open(q_filenameroot+'.dat', 'w')
-	qfile.write('#ID    Redshift    Log(Mass)    Re_Maj    Sersic_n     ')
+	qfile.write('#ID    Redshift    Log(Mass)    Re_Maj    Sersic_n     axis_ratio     ')
 	for j in range(0, number_filters):
 		qfile.write(filters[j]+'    ')
 	qfile.write(' \n')
 if (use_IDs == 1):
 	idfile = open(id_filenameroot+'.dat', 'w')
-	idfile.write('#ID    Redshift    Log(Mass)    Re_Maj    Sersic_n     ')
+	idfile.write('#ID    Redshift    Log(Mass)    Re_Maj    Sersic_n     axis_ratio     ')
 	for j in range(0, number_filters):
 		idfile.write(filters[j]+'    ')
 	idfile.write(' \n')
@@ -291,6 +288,7 @@ if (use_IDs == 1):
 			object_logmass = full_sf_logmass[object_index]
 			object_re_maj = full_sf_re_maj[object_index]
 			object_sersic_n = full_sf_sersic_n[object_index]
+			object_axis_ratio = full_sf_axis_ratio[object_index]
 			for z in range(0, number_filters):
 				object_fluxes[z] = sf_filt_flux[z][object_index]
 		else:
@@ -300,11 +298,12 @@ if (use_IDs == 1):
 			object_logmass = full_q_logmass[object_index]
 			object_re_maj = full_q_re_maj[object_index]
 			object_sersic_n = full_q_sersic_n[object_index]
+			object_axis_ratio = full_q_axis_ratio[object_index]
 			for z in range(0, number_filters):
 				object_fluxes[z] = q_filt_flux[z][object_index]
 
 		idfile.write(str(object_ID)+' '+str(object_redshifts)+' '+str(object_logmass)
-					+' '+str(object_re_maj)+' '+str(object_sersic_n)+' ')
+					+' '+str(object_re_maj)+' '+str(object_sersic_n)+' '+str(object_axis_ratio)+' ')
 		for z in range(0, number_filters):
 			idfile.write(str(object_fluxes[z])+' ')
 		idfile.write(' \n')
@@ -335,6 +334,7 @@ else:
 			full_sf_logmass_z_mass = full_sf_logmass[z_indices_sf][mass_indices_sf]
 			full_sf_re_maj_z_mass = full_sf_re_maj[z_indices_sf][mass_indices_sf]
 			full_sf_sersic_n_z_mass = full_sf_sersic_n[z_indices_sf][mass_indices_sf]
+			full_sf_axis_ratio_z_mass = full_sf_axis_ratio[z_indices_sf][mass_indices_sf]
 	
 			# Find the SF flux values for the objects in the mass and redshift bin being examined.
 			sf_filt_flux_z_mass = np.zeros([number_filters, len(full_sf_IDs_z_mass)])
@@ -355,7 +355,7 @@ else:
 					if (randomize_IDs == 0):
 						sf_ID_value = full_sf_IDs_z_mass[ri[x]]
 					sffile.write(str(sf_ID_value)+' '+str(full_sf_redshifts_z_mass[ri[x]])+' '+str(full_sf_logmass_z_mass[ri[x]])
-						+' '+str(full_sf_re_maj_z_mass[ri[x]])+' '+str(full_sf_sersic_n_z_mass[ri[x]])+' ')
+						+' '+str(full_sf_re_maj_z_mass[ri[x]])+' '+str(full_sf_sersic_n_z_mass[ri[x]])+' '+str(full_sf_axis_ratio_z_mass[ri[x]])+' ')
 					for j in range(0, number_filters):
 						flux_1D_array = sf_filt_flux_z_mass[:][j]
 						sffile.write(str(flux_1D_array[ri[x]])+' ')
@@ -370,6 +370,7 @@ else:
 			full_q_logmass_z_mass = full_q_logmass[z_indices_q][mass_indices_q]
 			full_q_re_maj_z_mass = full_q_re_maj[z_indices_q][mass_indices_q]
 			full_q_sersic_n_z_mass = full_q_sersic_n[z_indices_q][mass_indices_q]
+			full_q_axis_ratio_z_mass = full_q_axis_ratio[z_indices_q][mass_indices_q]
 	
 			# Find the Q flux values for the objects in the mass and redshift bin being examined.
 			q_filt_flux_z_mass = np.zeros([number_filters, len(full_q_IDs_z_mass)])
@@ -391,7 +392,7 @@ else:
 					if (randomize_IDs == 0):
 						q_ID_value = full_q_IDs_z_mass[ri[x]]
 					qfile.write(str(q_ID_value)+' '+str(full_q_redshifts_z_mass[ri[x]])+' '+str(full_q_logmass_z_mass[ri[x]])
-						+' '+str(full_q_re_maj_z_mass[ri[x]])+' '+str(full_q_sersic_n_z_mass[ri[x]])+' ')
+						+' '+str(full_q_re_maj_z_mass[ri[x]])+' '+str(full_q_sersic_n_z_mass[ri[x]])+' '+str(full_q_axis_ratio_z_mass[ri[x]])+' ')
 					for j in range(0, number_filters):
 						flux_1D_array = q_filt_flux_z_mass[:][j]
 						qfile.write(str(flux_1D_array[ri[x]])+' ')
@@ -416,22 +417,24 @@ else:
 	
 if (args.make_fits):
 	# First, let's make the  dtype and colnames arrays
-	colnames = np.zeros(5+number_filters, dtype ='S20')
-	dtype = np.zeros(5+number_filters, dtype ='str')
+	colnames = np.zeros(6+number_filters, dtype ='S20')
+	dtype = np.zeros(6+number_filters, dtype ='str')
 	colnames[0] = 'ID'
 	colnames[1] = 'redshift'
 	colnames[2] = 'logmass'
 	colnames[3] = 'Re_maj'
 	colnames[4] = 'sersic_n'
+	colnames[5] = 'axis_ratio'
 		
 	dtype[0] = 'I'
 	dtype[1] = 'd'
 	dtype[2] = 'd'
 	dtype[3] = 'd'
 	dtype[4] = 'd'
+	dtype[5] = 'd'
 	for j in range(0, number_filters):
-		colnames[j+5] = filters[j]
-		dtype[j+5] = 'd'
+		colnames[j+6] = filters[j]
+		dtype[j+6] = 'd'
 
 	if (make_sf == 1):
 		catalogue_file = sf_filenameroot+'.dat'
@@ -441,21 +444,23 @@ if (args.make_fits):
 		logmasses = cat_file_full[:,2]
 		re_major = cat_file_full[:,3]
 		sersic_n = cat_file_full[:,4]
+		axis_ratio = cat_file_full[:,5]
 		n_objects = ID_numbers.size
 	
 		apparent_flux = np.zeros([number_filters, n_objects])
 		for j in range(0, number_filters):
-			apparent_flux[:][j] = cat_file_full[:,5+j]
+			apparent_flux[:][j] = cat_file_full[:,6+j]
 		
 		# And now let's assemble the data array
-		output_data = np.zeros([n_objects, 5+number_filters])
+		output_data = np.zeros([n_objects, 6+number_filters])
 		output_data[:,0] = ID_numbers
 		output_data[:,1] = redshifts
 		output_data[:,2] = logmasses
 		output_data[:,3] = re_major
 		output_data[:,4] = sersic_n
+		output_data[:,5] = axis_ratio
 		for j in range(0, number_filters):
-			output_data[:,j+5] = apparent_flux[:][j]
+			output_data[:,j+6] = apparent_flux[:][j]
 		
 		# And finally, let's write out the output file.
 		outtab = Table(output_data, names=colnames, dtype=dtype)
@@ -469,22 +474,24 @@ if (args.make_fits):
 		logmasses = cat_file_full[:,2]
 		re_major = cat_file_full[:,3]
 		sersic_n = cat_file_full[:,4]
+		axis_ratio = cat_file_full[:,5]
 		n_objects = ID_numbers.size
 	
 		apparent_flux = np.zeros([number_filters, n_objects])
 		for j in range(0, number_filters):
-			apparent_flux[:][j] = cat_file_full[:,5+j]
+			apparent_flux[:][j] = cat_file_full[:,6+j]
 		
 				
 		# And now let's assemble the data array
-		output_data = np.zeros([n_objects, 5+number_filters])
+		output_data = np.zeros([n_objects, 6+number_filters])
 		output_data[:,0] = ID_numbers
 		output_data[:,1] = redshifts
 		output_data[:,2] = logmasses
 		output_data[:,3] = re_major
 		output_data[:,4] = sersic_n
+		output_data[:,5] = axis_ratio
 		for j in range(0, number_filters):
-			output_data[:,j+5] = apparent_flux[:][j]
+			output_data[:,j+6] = apparent_flux[:][j]
 		
 		# And finally, let's write out the output file.
 		outtab = Table(output_data, names=colnames, dtype=dtype)
@@ -498,21 +505,23 @@ if (args.make_fits):
 		logmasses = cat_file_full[:,2]
 		re_major = cat_file_full[:,3]
 		sersic_n = cat_file_full[:,4]
+		axis_ratio = cat_file_full[:,5]
 		n_objects = ID_numbers.size
 	
 		apparent_flux = np.zeros([number_filters, n_objects])
 		for j in range(0, number_filters):
-			apparent_flux[:][j] = cat_file_full[:,5+j]
+			apparent_flux[:][j] = cat_file_full[:,6+j]
 		
 		# And now let's assemble the data array
-		output_data = np.zeros([n_objects, 5+number_filters])
+		output_data = np.zeros([n_objects, 6+number_filters])
 		output_data[:,0] = ID_numbers
 		output_data[:,1] = redshifts
 		output_data[:,2] = logmasses
 		output_data[:,3] = re_major
 		output_data[:,4] = sersic_n
+		output_data[:,5] = axis_ratio
 		for j in range(0, number_filters):
-			output_data[:,j+5] = apparent_flux[:][j]
+			output_data[:,j+6] = apparent_flux[:][j]
 		
 		# And finally, let's write out the output file.
 		outtab = Table(output_data, names=colnames, dtype=dtype)
@@ -526,21 +535,23 @@ if (args.make_fits):
 		logmasses = cat_file_full[:,2]
 		re_major = cat_file_full[:,3]
 		sersic_n = cat_file_full[:,4]
+		axis_ratio = cat_file_full[:,5]
 		n_objects = ID_numbers.size
 	
 		apparent_flux = np.zeros([number_filters, n_objects])
 		for j in range(0, number_filters):
-			apparent_flux[:][j] = cat_file_full[:,5+j]
+			apparent_flux[:][j] = cat_file_full[:,6+j]
 		
 		# And now let's assemble the data array
-		output_data = np.zeros([n_objects, 5+number_filters])
+		output_data = np.zeros([n_objects, 6+number_filters])
 		output_data[:,0] = ID_numbers
 		output_data[:,1] = redshifts
 		output_data[:,2] = logmasses
 		output_data[:,3] = re_major
 		output_data[:,4] = sersic_n
+		output_data[:,5] = axis_ratio
 		for j in range(0, number_filters):
-			output_data[:,j+5] = apparent_flux[:][j]
+			output_data[:,j+6] = apparent_flux[:][j]
 		
 		# And finally, let's write out the output file.
 		outtab = Table(output_data, names=colnames, dtype=dtype)
